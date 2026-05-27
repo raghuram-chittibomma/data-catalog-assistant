@@ -1,0 +1,15 @@
+name: load_order_line_facts
+description: Staging-to-fact load for order line items used by sales and product analytics.
+owner: data-engineering
+schedule: "15 2 * * *"
+sources:
+  - public.orders
+  - public.order_details
+  - public.products
+targets:
+  - public.order_line_fact
+transformations:
+  - Join orders to order_details and products
+  - Normalize unit_price and discount
+  - Append-only insert into order_line_fact
+dependencies: []

@@ -1,0 +1,12 @@
+{
+  "etl_jobs": [
+    {
+      "name": "sync_order_details",
+      "description": "Sync order line items from staging.",
+      "sources": ["public.orders", "order_details"],
+      "targets": ["public.order_details_fact"],
+      "transformations": ["Deduplicate by order_id and product_id"],
+      "dependencies": ["etl:refresh_customer_dim"]
+    }
+  ]
+}

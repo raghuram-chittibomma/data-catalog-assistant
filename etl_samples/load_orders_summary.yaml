@@ -1,0 +1,14 @@
+name: load_orders_summary
+description: Aggregates customer order counts into a summary table for reporting.
+owner: data-engineering
+schedule: "0 2 * * *"
+sources:
+  - public.customers
+  - public.orders
+targets:
+  - public.orders_summary
+transformations:
+  - Join customers to orders on customer_id
+  - Aggregate order count by company_name
+dependencies:
+  - etl:etl_samples/refresh_employee_dim.yaml#refresh_employee_dim

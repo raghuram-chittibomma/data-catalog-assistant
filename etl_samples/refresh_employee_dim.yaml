@@ -1,0 +1,13 @@
+name: refresh_employee_dim
+description: Refresh employee dimension for sales reporting and order attribution.
+owner: data-engineering
+schedule: "0 1 * * *"
+sources:
+  - public.employees
+targets:
+  - public.employee_dim
+transformations:
+  - Snapshot active employees
+  - Derive full_name from first_name and last_name
+  - Apply SCD type 1 updates on title and region
+dependencies: []

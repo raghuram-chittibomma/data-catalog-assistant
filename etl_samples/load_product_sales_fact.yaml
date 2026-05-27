@@ -1,0 +1,16 @@
+name: load_product_sales_fact
+description: Loads product-level sales metrics from order lines into a reporting fact table.
+owner: data-engineering
+schedule: "30 2 * * *"
+sources:
+  - public.categories
+  - public.products
+  - public.order_details
+targets:
+  - public.product_sales_fact
+transformations:
+  - Join categories, products, and order_details
+  - Compute line_revenue and units_sold per product
+  - Upsert into product_sales_fact by product_id
+dependencies:
+  - etl:etl_samples/load_order_line_facts.yaml#load_order_line_facts

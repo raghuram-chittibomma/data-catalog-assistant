@@ -1,0 +1,10 @@
+name: refresh_customer_dim
+description: Refresh customer dimension from operational customers table.
+sources:
+  - public.customers
+targets:
+  - public.customer_dim
+transformations:
+  - Type cast and rename columns
+  - Apply slowly-changing-dimension rules
+schedule: "0 1 * * *"

@@ -1,0 +1,105 @@
+# Main configuration file for Data Catalog Assistant
+
+# Data Warehouse Configuration
+datawarehouse:
+  type: postgresql
+  connection:
+    host: ${DW_HOST}
+    port: 5432
+    database: northwind
+    user: ${DW_USER}
+    password: ${DW_PASSWORD}
+  ingest:
+    schemas:
+      - public
+    exclude_tables: []
+    default_owner: data-engineering
+    default_schema: public
+    sql_paths:
+      - sql_samples
+    etl_paths:
+      - etl_samples
+
+# Vector Store Configuration
+vector_store:
+  type: chroma
+  backend:
+    # Persistence settings for Chroma (embedded PersistentClient)
+    persist_directory: chroma_data
+    chroma_impl: duckdb+parquet
+  collection_name: bdw_rag_collection
+  embedding_dimension: 384
+
+# Embedding Service Configuration (local sentence-transformers)
+embeddings:
+  provider: local
+  model_name: all-MiniLM-L6-v2
+
+# LLM Configuration
+llm:
+  provider: openai  # or anthropic, azure, etc
+  model: gpt-4
+  api_key: ${OPENAI_API_KEY}
+  temperature: 0.7
+  max_tokens: 2000
+  log_prompts: true  # INFO log of system + user messages sent to the LLM
+
+# Natural-language SQL (Phase 3 — RAG context from vector search)
+query:
+  rag_top_k: 5
+  max_context_chars: 3500
+
+# Metadata Store Configuration (for lineage and relationships)
+metadata_store:
+  type: postgres  # or mongodb, dynamodb
+  connection:
+    host: ${METADATA_DB_HOST}
+    port: 5432
+    database: bdw_rag_metadata
+    user: ${METADATA_DB_USER}
+    password: ${METADATA_DB_PASSWORD}
+
+# MCP Server Configuration
+mcp_server:
+  enabled: true
+  host: localhost
+  port: 3000
+  debug: false
+
+# Gradio UI Configuration
+ui:
+  enabled: true
+  host: 127.0.0.1
+  port: 7860
+  share: false
+  theme: default
+
+# Batch Jobs Configuration
+batch_jobs:
+  vector_db_refresh:
+    enabled: true
+    schedule_on_startup: false  # use: python batch_jobs/run_refresh_job.py
+    schedule: "02:00"  # 2 AM every day (only if schedule_on_startup: true)
+    timeout: 3600
+    retry_failed: true
+
+# Logging Configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: logs/bdw_rag.log
+  max_size_mb: 100
+  backup_count: 5
+
+# Caching Configuration
+cache:
+  enabled: true
+  backend: memory  # or redis
+  ttl: 3600  # seconds
+
+# Security Configuration
+security:
+  enable_auth: false
+  auth_type: oauth2  # or jwt, basic
+  allowed_users: []
+  enable_ssl: false
