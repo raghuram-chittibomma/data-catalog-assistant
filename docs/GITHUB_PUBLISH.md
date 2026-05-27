@@ -4,6 +4,22 @@ Use this checklist before linking the project on a resume.
 
 ---
 
+## Important: do not commit via Cursor Agent
+
+When the **Cursor agent** runs `git commit`, it may add:
+
+`Co-authored-by: Cursor <cursoragent@cursor.com>`
+
+That does **not** help your resume. Commit only from **your own terminal** (PowerShell, Git Bash, or VS Code terminal with you typing/running the command).
+
+| Use | Script / command |
+|-----|------------------|
+| New changes | `.\scripts\publish_commit.ps1 -Message "Your message"` |
+| Remove Cursor from last commit | `.\scripts\fix_commit_no_cursor.ps1 -Push` |
+| Manual | `git commit -m "message"` — **never** `--trailer "Co-authored-by: Cursor ..."` |
+
+---
+
 ## 1. Create the repository
 
 ```powershell
@@ -11,7 +27,7 @@ cd C:\Users\raghu\AI-Projects\data-catalog-assistant
 git init
 git add .
 git status   # verify no .env, chroma_data/, secrets
-git commit -m "Initial commit: Data Catalog Assistant POC"
+.\scripts\publish_commit.ps1 -Message "Initial commit: Data Catalog Assistant POC"
 git remote add origin https://github.com/raghuram-chittibomma/data-catalog-assistant.git
 git branch -M main
 git push -u origin main

@@ -107,11 +107,24 @@ python batch_jobs\run_refresh_job.py
 
 ### Phase 5 — Production — **Later**
 
-- Ingestion Phase E
-- MCP auth / SSL
+**Platform & security**
+
+- MCP auth / TLS / secret management
 - Integration tests against real DW (pytest marker)
 - Official MCP SDK (optional)
 - Logging to `logs/bdw_rag.log` in production
+
+**Ingestion Phase E + ETL/report platform integration**
+
+- Incremental ingest, per-asset errors, refresh metrics (Phase E)
+- **Enterprise reporting platform** — direct integration to source report definitions and dependencies into the catalog (not file samples only)
+- Direct integration to **report and ETL servers** for incremental catalog/embedding updates (not only DW schema + local sample files)
+- **Informatica (example):** Workflow XML, Mapping XML, source/target definitions → parse lineage and refresh vectors on change
+
+**Search & RAG**
+
+- **LLM in catalog search** — NLP-assisted discovery (POC search is embeddings-only in Chroma)
+- **Richer RAG context** — include matching report metadata and ETL/SQL in retrieval (extend beyond current catalog snippets for `generate_query`)
 
 ---
 

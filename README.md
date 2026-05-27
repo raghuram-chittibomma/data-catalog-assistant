@@ -201,7 +201,25 @@ CI runs the same suite on push (see `.github/workflows/ci.yml`). Badge links to 
 
 - Never commit `.env` or API keys.
 - Use `.env.example` as a template only.
-- Production would add MCP auth, TLS, and secret management (see `docs/MAIN_PLAN.md` Phase 5).
+
+## Roadmap (production)
+
+This POC is demo-ready; production and the next feature wave are outlined in [`docs/MAIN_PLAN.md`](docs/MAIN_PLAN.md) Phase 5.
+
+**Platform & security**
+
+- MCP authentication, TLS, and centralized secret management.
+
+**Incremental ingestion from report & ETL platforms**
+
+- **Enterprise reporting platform** — direct integration to source report definitions, dependencies, and usage metadata into the catalog (alongside the data warehouse).
+- Direct integration with report and ETL servers to pull **incremental** changes and refresh embeddings (today: full refresh from the DW plus local `sql_samples/` / `etl_samples/`).
+- Example (**Informatica**): ingest Workflow XML, Mapping XML, and source/target definitions so catalog and vectors stay current when mappings change.
+
+**Search & RAG**
+
+- **LLM-assisted catalog search** — use NLP on search (and related flows), not only embedding similarity, for more natural, user-friendly queries.
+- **Richer retrieval context** — include matching report metadata and ETL/SQL logic in RAG context (today: catalog snippets; Generate SQL already uses top-k retrieval).
 
 ---
 

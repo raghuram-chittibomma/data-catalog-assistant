@@ -117,8 +117,21 @@ Numbers vary with config and samples; run `python batch_jobs/run_refresh_job.py`
 
 - POC / single-tenant; no MCP auth or TLS in this repo.
 - Catalog refresh is **manual CLI** (`run_refresh_job.py`); scheduler loop not enabled by default.
-- Incremental ingest and production observability are deferred (see `docs/MAIN_PLAN.md`).
-- Requires your own PostgreSQL DW and metadata DB (or adjust `config/config.yaml`).
+- Ingestion is DW schema + file-based SQL/ETL samples — not yet wired to live report/ETL servers.
+- Catalog search uses **embeddings only**; other flows (lineage, impact) use metadata/rules, not LLM.
+- Requires your own PostgreSQL DW and metadata DB (or `.env` hosts + `config/config.yaml`).
+
+## Planned enhancements (production roadmap)
+
+Good interview “what’s next” talking points — detail in [MAIN_PLAN.md](MAIN_PLAN.md) Phase 5:
+
+| Area | Direction |
+|------|-----------|
+| **Security** | MCP auth, TLS, secret management |
+| **Enterprise reporting** | Direct integration to an enterprise reporting platform to ingest report assets and lineage into the catalog |
+| **ETL / report integration** | Incremental updates from ETL platforms (e.g. Informatica Workflow XML, Mapping XML, source/target definitions) |
+| **Search** | LLM-backed NLP search for user-friendly catalog discovery (beyond Chroma similarity) |
+| **RAG context** | Pull in matching report definitions and ETL/SQL text when answering or generating SQL |
 
 ---
 
