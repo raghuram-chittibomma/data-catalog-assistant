@@ -14,8 +14,6 @@ Run it directly with::
     python -m src.mcp_server.mcp_app
 """
 
-from __future__ import annotations
-
 import json
 import logging
 import sys
