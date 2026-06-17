@@ -5,7 +5,6 @@ Run after catalog refresh and app start:
 ```powershell
 conda activate ai-dev
 cd C:\Users\raghu\AI-Projects\data-catalog-assistant
-python scripts\preflight_refresh.py
 python batch_jobs\run_refresh_job.py
 python src\main.py
 ```

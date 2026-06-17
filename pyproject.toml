@@ -31,7 +31,6 @@ ignore = [
 "src/main.py" = ["E402"]
 "src/mcp_server/mcp_app.py" = ["E402"]
 "batch_jobs/*" = ["E402"]
-"scripts/*" = ["E402", "W291"]
 "tests/test_rag_engine.py" = ["E402"]
 
 [tool.pytest.ini_options]

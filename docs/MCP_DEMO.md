@@ -2,7 +2,7 @@
 
 Data Catalog Assistant exposes the same tools two ways:
 
-1. A **REST API** (FastAPI) on **http://localhost:3000** — convenient for curl/scripts (this doc).
+1. A **REST API** (FastAPI) on **http://localhost:3000** — convenient for curl / HTTP (this doc).
 2. A protocol-compliant **MCP server** over stdio for agents — see [Run as an MCP server](#run-as-an-mcp-server) below.
 
 ## Prerequisites
@@ -18,7 +18,7 @@ python src\main.py
 Leave `main.py` running (Ctrl+C to stop).
 
 - **Gradio UI:** http://127.0.0.1:7860 (catalog search, lineage, generate SQL)
-- **REST API:** http://localhost:3000 (scripts/curl)
+- **REST API:** http://localhost:3000 (curl / HTTP)
 
 ## Endpoints
 
@@ -129,12 +129,6 @@ Register it with an MCP client (e.g. Claude Desktop `claude_desktop_config.json`
 ```
 
 The client can then list/call the 13 tools and read the `catalog://` resources directly.
-
-## Smoke script (REST server must be running)
-
-```powershell
-python scripts\mcp_smoke.py
-```
 
 ## Automated tests
 

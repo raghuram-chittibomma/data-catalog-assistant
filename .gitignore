@@ -104,3 +104,6 @@ build/
 # Config backups
 *.yaml.bak
 *.yaml.backup
+
+# Local-only dev/diagnostic scripts (not published)
+scripts/

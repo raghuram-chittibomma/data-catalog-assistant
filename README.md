@@ -121,7 +121,6 @@ copy .env.example .env
 ### Refresh catalog (required once)
 
 ```powershell
-python scripts\preflight_refresh.py
 python batch_jobs\run_refresh_job.py
 ```
 
@@ -140,7 +139,7 @@ python -m src.mcp_server.mcp_app
 | Interface | Endpoint | Use |
 |-----------|----------|-----|
 | Gradio UI | http://127.0.0.1:7860 | Interactive demo |
-| REST API | http://localhost:3000 | HTTP / curl / scripts |
+| REST API | http://localhost:3000 | HTTP / curl |
 | MCP server | stdio (`python -m src.mcp_server.mcp_app`) | Claude Desktop, Cursor, other MCP clients |
 
 See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for an example MCP client config.

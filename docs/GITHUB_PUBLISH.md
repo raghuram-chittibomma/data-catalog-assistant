@@ -12,10 +12,10 @@ When the **Cursor agent** runs `git commit`, it may add:
 
 That does **not** help your resume. Commit only from **your own terminal** (PowerShell, Git Bash, or VS Code terminal with you typing/running the command).
 
-| Use | Script / command |
-|-----|------------------|
-| New changes | `.\scripts\publish_commit.ps1 -Message "Your message"` |
-| Remove Cursor from last commit | `.\scripts\fix_commit_no_cursor.ps1 -Push` |
+| Use | Command |
+|-----|---------|
+| New changes | `git add -A; git commit -m "Your message"; git push origin main` |
+| Remove Cursor from last (unpushed) commit | `git commit --amend --reset-author -m "Your message"` then `git push --force-with-lease origin main` |
 | Manual | `git commit -m "message"` — **never** `--trailer "Co-authored-by: Cursor ..."` |
 
 ---
@@ -26,8 +26,8 @@ That does **not** help your resume. Commit only from **your own terminal** (Powe
 cd C:\Users\raghu\AI-Projects\data-catalog-assistant
 git init
 git add .
-git status   # verify no .env, chroma_data/, secrets
-.\scripts\publish_commit.ps1 -Message "Initial commit: Data Catalog Assistant POC"
+git status   # verify no .env, chroma_data/, scripts/, secrets
+git commit -m "Initial commit: Data Catalog Assistant POC"
 git remote add origin https://github.com/raghuram-chittibomma/data-catalog-assistant.git
 git branch -M main
 git push -u origin main

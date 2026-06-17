@@ -58,7 +58,7 @@ flowchart LR
   Tools --> REST
   Tools --> MCP
   Tools --> UI
-  REST --> Curl[curl / scripts]
+  REST --> Curl[curl / HTTP]
   MCP --> Agents[Claude Desktop / Cursor]
 ```
 

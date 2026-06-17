@@ -18,7 +18,7 @@
 | Chroma `chroma_data/` | Done | 16 documents added |
 | `sentence-transformers` | Done in ai-dev | Upgraded (2.2.2 + old hub conflict fixed); model cached |
 | Unit tests | Done | 62 passed (1 skipped without gradio in CI) |
-| `scripts/preflight_refresh.py` | Done | 0 fail / 0 warn before last refresh |
+| Preflight refresh check | Done | 0 fail / 0 warn before last refresh |
 | MCP HTTP API (FastAPI) | Done (Phase 2) | `main.py` keep-alive; see `docs/MCP_DEMO.md` |
 | Gradio UI | Done (Phase 4) | http://127.0.0.1:7860 — search, lineage, SQL tabs; needs `gradio>=4.44`, `starlette<1` |
 | `QueryProcessor` | Done (Phase 2) | Delegates to `RAGEngine`; MCP returns `sql` key |
@@ -44,7 +44,6 @@
 ```powershell
 conda activate ai-dev
 cd c:\Users\raghu\AI-Projects\data-catalog-assistant
-python scripts\preflight_refresh.py
 python batch_jobs\run_refresh_job.py
 ```
 
@@ -72,7 +71,7 @@ python batch_jobs\run_refresh_job.py
 |------|--------|
 | 2.1 `main.py` lifecycle | Done — MCP keep-alive; scheduler off unless `schedule_on_startup: true` |
 | 2.2 `QueryProcessor` → `RAGEngine` | Done — `normalize_llm_result`; MCP `sql` key |
-| 2.3 MCP smoke tests / curl doc | Done — `docs/MCP_DEMO.md`, `scripts/mcp_smoke.py`, pytest |
+| 2.3 MCP smoke tests / curl doc | Done — `docs/MCP_DEMO.md`, pytest |
 | 2.4 `sentence-transformers>=3` in requirements | Done |
 
 **Done when:** `python src/main.py` stays up; curl search + lineage return real post-refresh data.

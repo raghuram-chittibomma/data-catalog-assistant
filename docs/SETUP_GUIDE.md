@@ -59,9 +59,6 @@ Edit `config/config.yaml` with:
 ### 6. Populate the index, then run
 
 ```bash
-# (Optional) verify config + connectivity before refreshing
-python scripts/preflight_refresh.py
-
 # Build/refresh the Chroma vector index + metadata store from the DW, SQL, and ETL samples
 python batch_jobs/run_refresh_job.py
 
