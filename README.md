@@ -179,7 +179,6 @@ CI runs **two jobs** on push (see `.github/workflows/ci.yml`): a `lint` job (`ru
 | [docs/SHOWCASE.md](docs/SHOWCASE.md) | Resume / interview one-pager |
 | [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | Live demo steps |
 | [docs/GITHUB_PUBLISH.md](docs/GITHUB_PUBLISH.md) | Clean repo checklist |
-| [docs/MAIN_PLAN.md](docs/MAIN_PLAN.md) | Phase status (internal) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Component deep dive |
 | [docs/MCP_DEMO.md](docs/MCP_DEMO.md) | REST / MCP usage examples |
 | [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) | Install, run, and MCP client config |
@@ -218,7 +217,7 @@ The same 13 tools and 4 catalog resources are exposed over both the REST API and
 
 ## Roadmap (production)
 
-This POC is demo-ready; production and the next feature wave are outlined in [`docs/MAIN_PLAN.md`](docs/MAIN_PLAN.md) Phase 5.
+This POC is demo-ready; the production and next-feature roadmap is outlined below.
 
 **Platform & security**
 

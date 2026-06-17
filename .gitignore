@@ -107,3 +107,6 @@ build/
 
 # Local-only dev/diagnostic scripts (not published)
 scripts/
+
+# Internal planning doc (not published)
+docs/MAIN_PLAN.md

@@ -129,7 +129,7 @@ Numbers vary with config and samples; run `python batch_jobs/run_refresh_job.py`
 
 ## Planned enhancements (production roadmap)
 
-Good interview “what’s next” talking points — detail in [MAIN_PLAN.md](MAIN_PLAN.md) Phase 5:
+Good interview “what’s next” talking points:
 
 | Area | Direction |
 |------|-----------|
@@ -147,7 +147,6 @@ Good interview “what’s next” talking points — detail in [MAIN_PLAN.md](M
 |-----|---------|
 | [README.md](../README.md) | Install, run, architecture |
 | [DEMO_SCRIPT.md](DEMO_SCRIPT.md) | 5-minute demo + Gradio/curl steps |
-| [MAIN_PLAN.md](MAIN_PLAN.md) | Internal phase tracker |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Deeper component notes |
 | [MCP_DEMO.md](MCP_DEMO.md) | REST + MCP tool examples |
 | [GITHUB_PUBLISH.md](GITHUB_PUBLISH.md) | Checklist to publish a clean GitHub repo |
