@@ -3,7 +3,7 @@ Impact analyzer - analyzes where data is used and its impact.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 from src.core.lineage_service import get_asset_lineage
 
@@ -27,12 +27,12 @@ class ImpactAnalyzer:
         self.metadata_store = metadata_store
         logger.info("Impact Analyzer initialized")
 
-    def _all_assets(self) -> List[Dict[str, Any]]:
+    def _all_assets(self) -> list[dict[str, Any]]:
         if not self.metadata_store:
             return []
         return list(self.metadata_store.store.get("assets", {}).values())
 
-    def analyze_data_usage(self, data_asset: str) -> Dict[str, Any]:
+    def analyze_data_usage(self, data_asset: str) -> dict[str, Any]:
         """
         Analyze where a data asset is used.
 
@@ -44,8 +44,12 @@ class ImpactAnalyzer:
         """
         logger.debug(f"Analyzing usage for: {data_asset}")
         asset = self.metadata_store.get_asset_metadata(data_asset) if self.metadata_store else None
-        upstream = self.metadata_store.get_upstream_assets(data_asset) if self.metadata_store else []
-        downstream = self.metadata_store.get_downstream_assets(data_asset) if self.metadata_store else []
+        upstream = (
+            self.metadata_store.get_upstream_assets(data_asset) if self.metadata_store else []
+        )
+        downstream = (
+            self.metadata_store.get_downstream_assets(data_asset) if self.metadata_store else []
+        )
         queries = [a for a in downstream if a.get("asset_type") == "sql"]
         reports = [a for a in downstream if a.get("asset_type") in ("report", "etl")]
         etl_jobs = [a for a in downstream if a.get("asset_type") == "etl"]
@@ -62,7 +66,7 @@ class ImpactAnalyzer:
             "impact_score": impact_score,
         }
 
-    def get_lineage(self, data_asset: str, direction: str = "both") -> Dict[str, Any]:
+    def get_lineage(self, data_asset: str, direction: str = "both") -> dict[str, Any]:
         """
         Get lineage for a data asset (shared with MCP get_lineage and Gradio UI).
 
@@ -76,7 +80,7 @@ class ImpactAnalyzer:
         logger.debug("Getting %s lineage for: %s", direction, data_asset)
         return get_asset_lineage(self.metadata_store, data_asset, direction=direction)
 
-    def get_upstream_lineage(self, data_asset: str) -> Dict[str, Any]:
+    def get_upstream_lineage(self, data_asset: str) -> dict[str, Any]:
         """
         Get upstream lineage (what data feeds into this asset).
 
@@ -87,13 +91,15 @@ class ImpactAnalyzer:
             Upstream dependency tree
         """
         logger.debug(f"Getting upstream lineage for: {data_asset}")
-        upstream = self.metadata_store.get_upstream_assets(data_asset) if self.metadata_store else []
+        upstream = (
+            self.metadata_store.get_upstream_assets(data_asset) if self.metadata_store else []
+        )
         return {
             "asset": data_asset,
             "upstream": upstream,
         }
 
-    def get_downstream_lineage(self, data_asset: str) -> Dict[str, Any]:
+    def get_downstream_lineage(self, data_asset: str) -> dict[str, Any]:
         """
         Get downstream lineage (what uses this asset).
 
@@ -104,7 +110,9 @@ class ImpactAnalyzer:
             Downstream dependency tree
         """
         logger.debug(f"Getting downstream lineage for: {data_asset}")
-        downstream = self.metadata_store.get_downstream_assets(data_asset) if self.metadata_store else []
+        downstream = (
+            self.metadata_store.get_downstream_assets(data_asset) if self.metadata_store else []
+        )
         return {
             "asset": data_asset,
             "downstream": downstream,

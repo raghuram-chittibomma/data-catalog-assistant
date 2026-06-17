@@ -3,17 +3,16 @@ Gradio Interface - web UI for Data Catalog Assistant (Phase 4 + 5B parity).
 """
 
 import html
-import json
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
-from src.utils.change_asset_resolver import resolve_change_target_asset
 from src.ui.impact_view import (
     build_change_impact_html,
     build_impact_json,
     build_usage_impact_html,
 )
 from src.ui.lineage_view import build_lineage_diagram, build_lineage_json
+from src.utils.change_asset_resolver import resolve_change_target_asset
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +41,7 @@ _TECH_NOTE_SEARCH = (
 _TECH_NOTE_BROWSE = (
     "> **No LLM** — Reads table counts and metadata from the catalog store (Postgres)."
 )
-_TECH_NOTE_LINEAGE = (
-    "> **No LLM** — Upstream/downstream links come from ingested SQL/ETL metadata."
-)
+_TECH_NOTE_LINEAGE = "> **No LLM** — Upstream/downstream links come from ingested SQL/ETL metadata."
 _TECH_NOTE_SQL = (
     "> **Uses LLM (OpenAI)** — Retrieves relevant catalog context (embeddings), then "
     "the model writes SQL. Requires `OPENAI_API_KEY`."
@@ -95,7 +92,7 @@ class GradioInterface:
         query_tools=None,
         impact_tools=None,
         data_catalog=None,
-        config: Dict[str, Any] = None,
+        config: dict[str, Any] = None,
     ):
         self.rag_engine = rag_engine
         self.query_processor = query_processor
@@ -114,9 +111,7 @@ class GradioInterface:
 
         hits = self.rag_engine.search_data_lineage(query, top_k=int(top_k))
         if not hits:
-            return (
-                "No results. Run `python batch_jobs\\run_refresh_job.py` to populate Chroma."
-            )
+            return "No results. Run `python batch_jobs\\run_refresh_job.py` to populate Chroma."
 
         blocks = []
         for i, hit in enumerate(hits, 1):
@@ -127,7 +122,7 @@ class GradioInterface:
             )
         return "\n\n".join(blocks)
 
-    def _fetch_lineage_data(self, asset_name: str, direction: str = "both") -> Dict[str, Any]:
+    def _fetch_lineage_data(self, asset_name: str, direction: str = "both") -> dict[str, Any]:
         asset_name = (asset_name or "").strip()
         dir_norm = direction or "both"
         if self.impact_tools:
@@ -143,9 +138,7 @@ class GradioInterface:
         diagram, _ = self.format_lineage_views(asset_name, direction)
         return diagram
 
-    def format_lineage_views(
-        self, asset_name: str, direction: str = "both"
-    ) -> Tuple[str, str]:
+    def format_lineage_views(self, asset_name: str, direction: str = "both") -> tuple[str, str]:
         """
         Return (diagram markdown, raw JSON markdown) for Gradio dual outputs.
         """
@@ -236,7 +229,7 @@ class GradioInterface:
         html_out, _ = self.format_data_usage_views(asset_name)
         return html_out
 
-    def format_data_usage_views(self, asset_name: str) -> Tuple[str, str]:
+    def format_data_usage_views(self, asset_name: str) -> tuple[str, str]:
         asset_name = (asset_name or "").strip()
         if not asset_name:
             return "<p>Enter an asset id (e.g. <code>public.orders</code>).</p>", ""
@@ -252,7 +245,7 @@ class GradioInterface:
 
     def format_change_impact_views(
         self, asset_name: str, change_description: str
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         asset_name = (asset_name or "").strip()
         change_description = (change_description or "").strip()
         if not change_description:
@@ -441,7 +434,9 @@ class GradioInterface:
                 )
                 change_btn = gr.Button("Assess change impact", variant="secondary")
                 change_html_out = gr.HTML(label="Change impact")
-                with gr.Accordion("Raw JSON — change assessment (expand for full payload)", open=False):
+                with gr.Accordion(
+                    "Raw JSON — change assessment (expand for full payload)", open=False
+                ):
                     change_json_out = gr.Markdown()
                 change_btn.click(
                     self.format_change_impact_views,
@@ -464,7 +459,7 @@ class GradioInterface:
             prevent_thread_lock=False,
         )
 
-    def query_builder_callback(self, query: str) -> Dict[str, Any]:
+    def query_builder_callback(self, query: str) -> dict[str, Any]:
         if self.query_tools:
             return self.query_tools.generate_query(query)
         if self.query_processor:
@@ -475,14 +470,14 @@ class GradioInterface:
             return QueryProcessor.normalize_llm_result(self.rag_engine.generate_query(query))
         return {"sql": "", "explanation": ""}
 
-    def lineage_callback(self, asset_name: str, direction: str = "both") -> Dict[str, Any]:
+    def lineage_callback(self, asset_name: str, direction: str = "both") -> dict[str, Any]:
         if self.impact_tools:
             return self.impact_tools.get_lineage(asset_name, direction=direction)
         if self.rag_engine:
             return self.rag_engine.get_data_lineage(asset_name)
         return {}
 
-    def impact_callback(self, asset_name: str) -> Dict[str, Any]:
+    def impact_callback(self, asset_name: str) -> dict[str, Any]:
         if self.impact_tools:
             return self.impact_tools.analyze_data_usage(asset_name)
         if self.rag_engine:

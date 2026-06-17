@@ -3,7 +3,6 @@ Local embedding service — sentence-transformers (ChromaDB stack).
 """
 
 import logging
-from typing import List
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
@@ -13,12 +12,12 @@ class EmbeddingService(ABC):
     """Abstract base class for embedding services."""
 
     @abstractmethod
-    def embed_text(self, text: str) -> List[float]:
+    def embed_text(self, text: str) -> list[float]:
         """Convert text to embedding vector."""
         pass
 
     @abstractmethod
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
         """Convert multiple texts to embedding vectors."""
         pass
 
@@ -54,8 +53,8 @@ class LocalEmbedding(EmbeddingService):
 
             # Fallback: use Hugging Face transformers directly (mean pooling)
             try:
-                from transformers import AutoTokenizer, AutoModel
                 import torch
+                from transformers import AutoModel, AutoTokenizer
 
                 tokenizer = AutoTokenizer.from_pretrained(self.model_name)
                 model = AutoModel.from_pretrained(self.model_name)
@@ -66,16 +65,16 @@ class LocalEmbedding(EmbeddingService):
                 return self.model
             except Exception as e:
                 raise ImportError(
-                    "No local embedding backend available. Install sentence-transformers or transformers." 
+                    "No local embedding backend available. Install sentence-transformers or transformers."
                 ) from e
         return self.model
 
-    def embed_text(self, text: str) -> List[float]:
+    def embed_text(self, text: str) -> list[float]:
         """Convert text to embedding."""
         logger.debug(f"Embedding text: {text[:50]}...")
         return self.embed_texts([text])[0]
 
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
         """Convert multiple texts to embeddings."""
         if not texts:
             return []
@@ -99,7 +98,12 @@ class LocalEmbedding(EmbeddingService):
                 batch = texts[i : i + batch_size]
                 inputs = tokenizer(batch, padding=True, truncation=True, return_tensors="pt")
                 with torch.no_grad():
-                    outputs = hf_model(**{k: v.to(hf_model.device) if hasattr(hf_model, 'device') else v for k, v in inputs.items()})
+                    outputs = hf_model(
+                        **{
+                            k: v.to(hf_model.device) if hasattr(hf_model, "device") else v
+                            for k, v in inputs.items()
+                        }
+                    )
                     last_hidden = outputs.last_hidden_state
                     # mean pooling excluding padding tokens
                     attention_mask = inputs.get("attention_mask")

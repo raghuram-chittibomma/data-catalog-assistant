@@ -4,7 +4,7 @@ SQL parser - extracts information from SQL statements in reports/ETLs.
 
 import logging
 import re
-from typing import Dict, List, Any, Set, Optional
+from typing import Any
 
 import sqlparse
 from sqlparse.sql import Identifier, IdentifierList, Parenthesis
@@ -24,7 +24,7 @@ class SQLParser:
         self.default_schema = default_schema
         logger.info("Initialized SQL Parser (default_schema=%s)", default_schema)
 
-    def parse_query(self, sql: str) -> Dict[str, Any]:
+    def parse_query(self, sql: str) -> dict[str, Any]:
         """Parse SQL and return structured metadata."""
         logger.debug("Parsing SQL: %s...", sql[:80])
         tables = sorted(self.extract_tables(sql))
@@ -44,9 +44,9 @@ class SQLParser:
             "transformation_description": self.generate_description(sql, tables=tables),
         }
 
-    def extract_tables(self, sql: str) -> Set[str]:
+    def extract_tables(self, sql: str) -> set[str]:
         """Extract table names from SQL."""
-        tables: Set[str] = set()
+        tables: set[str] = set()
         for statement in sqlparse.parse(sql):
             if statement.get_type() == "UNKNOWN" and not str(statement).strip():
                 continue
@@ -59,8 +59,8 @@ class SQLParser:
         value = token.value.upper()
         return value in _TABLE_KEYWORDS or "JOIN" in value
 
-    def _tables_from_statement(self, statement) -> Set[str]:
-        tables: Set[str] = set()
+    def _tables_from_statement(self, statement) -> set[str]:
+        tables: set[str] = set()
         pending = False
 
         for token in statement.tokens:
@@ -85,8 +85,8 @@ class SQLParser:
 
         return tables
 
-    def _names_from_token(self, token) -> Set[str]:
-        names: Set[str] = set()
+    def _names_from_token(self, token) -> set[str]:
+        names: set[str] = set()
         if isinstance(token, IdentifierList):
             for identifier in token.get_identifiers():
                 names.add(self._normalize_table(self._identifier_name(identifier)))
@@ -120,9 +120,9 @@ class SQLParser:
             return cleaned.lower()
         return f"{self.default_schema}.{cleaned.lower()}"
 
-    def extract_columns(self, sql: str) -> Set[str]:
+    def extract_columns(self, sql: str) -> set[str]:
         """Extract simple column-like identifiers from SELECT lists (best effort)."""
-        columns: Set[str] = set()
+        columns: set[str] = set()
         for statement in sqlparse.parse(sql):
             if statement.get_type() != "SELECT":
                 continue
@@ -139,8 +139,8 @@ class SQLParser:
                     columns.update(self._column_names_from_select_token(token))
         return columns
 
-    def _column_names_from_select_token(self, token) -> Set[str]:
-        names: Set[str] = set()
+    def _column_names_from_select_token(self, token) -> set[str]:
+        names: set[str] = set()
         if isinstance(token, IdentifierList):
             for identifier in token.get_identifiers():
                 names.add(self._column_name_from_identifier(identifier))
@@ -154,9 +154,9 @@ class SQLParser:
             return ""
         return name.lower()
 
-    def extract_joins(self, sql: str) -> List[Dict[str, str]]:
+    def extract_joins(self, sql: str) -> list[dict[str, str]]:
         """Extract join keywords and joined table names."""
-        joins: List[Dict[str, str]] = []
+        joins: list[dict[str, str]] = []
         for statement in sqlparse.parse(sql):
             join_type = None
             pending = False
@@ -176,7 +176,7 @@ class SQLParser:
     def generate_description(
         self,
         sql: str,
-        tables: Optional[List[str]] = None,
+        tables: list[str] | None = None,
     ) -> str:
         """Generate a short human-readable description."""
         tables = tables if tables is not None else sorted(self.extract_tables(sql))

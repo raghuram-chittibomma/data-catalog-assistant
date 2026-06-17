@@ -1,11 +1,11 @@
 """SQL validation helpers for safety checks and basic parsing."""
+
 import re
-from typing import List, Optional, Tuple
 
 import sqlparse
 
 
-def extract_sql_from_llm_text(text: str) -> Tuple[str, str]:
+def extract_sql_from_llm_text(text: str) -> tuple[str, str]:
     """
     Pull SQL out of common LLM response shapes (markdown fences, prose, EXPLANATION:).
 
@@ -51,7 +51,7 @@ def extract_sql_from_llm_text(text: str) -> Tuple[str, str]:
     return sql_text, explanation
 
 
-def _extract_table_names(sql: str) -> List[str]:
+def _extract_table_names(sql: str) -> list[str]:
     """Naive extraction of table names from FROM and JOIN clauses."""
     tables = []
     # basic regex to capture FROM/JOIN table tokens (handles simple cases)
@@ -62,7 +62,11 @@ def _extract_table_names(sql: str) -> List[str]:
     return tables
 
 
-def validate_sql(sql_text: str, allowed_tables: Optional[List[str]] = None, blocked_keywords: Optional[List[str]] = None) -> Tuple[bool, str]:
+def validate_sql(
+    sql_text: str,
+    allowed_tables: list[str] | None = None,
+    blocked_keywords: list[str] | None = None,
+) -> tuple[bool, str]:
     """Validate SQL for safety.
 
     Checks performed:
@@ -95,8 +99,8 @@ def validate_sql(sql_text: str, allowed_tables: Optional[List[str]] = None, bloc
     if allowed_tables:
         refs = _extract_table_names(sql_text)
         # normalize for simple matching
-        refs_norm = [r.split('.')[-1].strip('"') for r in refs]
-        allowed_norm = [a.split('.')[-1].strip('"') for a in allowed_tables]
+        refs_norm = [r.split(".")[-1].strip('"') for r in refs]
+        allowed_norm = [a.split(".")[-1].strip('"') for a in allowed_tables]
         for r in refs_norm:
             if r and r.lower() not in [a.lower() for a in allowed_norm]:
                 return False, f"References disallowed table: {r}"

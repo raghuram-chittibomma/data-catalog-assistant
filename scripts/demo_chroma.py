@@ -5,9 +5,10 @@ Run this script to create an in-memory Chroma collection, add sample documents, 
 
 If `chromadb` is not installed, the script will print instructions.
 """
-import sys
-import os
+
 import json
+import os
+import sys
 from pathlib import Path
 
 # Ensure project root on path
@@ -22,7 +23,7 @@ def main():
         "backend": {
             "persist_directory": "chroma_data",
             "chroma_impl": "duckdb+parquet",
-        }
+        },
     }
 
     store = ChromaVectorStore(config=cfg)
@@ -43,9 +44,17 @@ def main():
             return
 
     docs = [
-        {"id": "d1", "text": "Customer table stores customer records", "metadata": {"table": "customer"}},
+        {
+            "id": "d1",
+            "text": "Customer table stores customer records",
+            "metadata": {"table": "customer"},
+        },
         {"id": "d2", "text": "Orders table stores order rows", "metadata": {"table": "orders"}},
-        {"id": "d3", "text": "Products table stores product catalog", "metadata": {"table": "products"}},
+        {
+            "id": "d3",
+            "text": "Products table stores product catalog",
+            "metadata": {"table": "products"},
+        },
     ]
 
     # simple toy embeddings (dim=3)
@@ -58,7 +67,7 @@ def main():
         if not os.path.exists(path):
             return False
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
             b_docs = data.get("documents")
             b_embs = data.get("embeddings")
@@ -90,5 +99,5 @@ def main():
         print("Failed to write demo backup:", e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

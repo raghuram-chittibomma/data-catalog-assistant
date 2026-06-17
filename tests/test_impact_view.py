@@ -20,7 +20,10 @@ def test_build_usage_impact_html_tree_and_details():
         "impact_score": 0.35,
         "queries": [{"asset_id": "sql:sql_samples/orders_by_customer.sql", "asset_type": "sql"}],
         "etl_jobs": [
-            {"asset_id": "etl:etl_samples/load_orders_summary.yaml#load_orders_summary", "asset_type": "etl"}
+            {
+                "asset_id": "etl:etl_samples/load_orders_summary.yaml#load_orders_summary",
+                "asset_type": "etl",
+            }
         ],
         "downstream": [],
     }

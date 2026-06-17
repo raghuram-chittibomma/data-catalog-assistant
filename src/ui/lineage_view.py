@@ -3,7 +3,7 @@ Human-readable lineage diagrams for the Gradio UI.
 """
 
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 
 def _node_id(item: Any) -> str:
@@ -30,7 +30,7 @@ def _label(item: Any) -> str:
     return f"{nid} ({ntype})" if ntype else nid
 
 
-def _center_from_data(data: Dict[str, Any], fallback: str) -> Tuple[str, str]:
+def _center_from_data(data: dict[str, Any], fallback: str) -> tuple[str, str]:
     asset = data.get("asset")
     if isinstance(asset, dict):
         center = str(asset.get("asset_id") or asset.get("name") or fallback).strip()
@@ -40,7 +40,7 @@ def _center_from_data(data: Dict[str, Any], fallback: str) -> Tuple[str, str]:
     return center or fallback, ""
 
 
-def build_lineage_diagram(data: Dict[str, Any], asset_name: str, direction: str = "both") -> str:
+def build_lineage_diagram(data: dict[str, Any], asset_name: str, direction: str = "both") -> str:
     """
     Build a high-level markdown + ASCII lineage view with arrows.
 
@@ -49,8 +49,8 @@ def build_lineage_diagram(data: Dict[str, Any], asset_name: str, direction: str 
     """
     center, center_type = _center_from_data(data, asset_name)
     dir_norm = (direction or "both").strip().lower()
-    upstream: List[Any] = list(data.get("upstream") or [])
-    downstream: List[Any] = list(data.get("downstream") or [])
+    upstream: list[Any] = list(data.get("upstream") or [])
+    downstream: list[Any] = list(data.get("downstream") or [])
 
     show_up = dir_norm in ("both", "upstream")
     show_down = dir_norm in ("both", "downstream")
@@ -82,7 +82,7 @@ def build_lineage_diagram(data: Dict[str, Any], asset_name: str, direction: str 
     # ASCII flow
     lines.append("### Flow")
     lines.append("```text")
-    diagram_rows: List[str] = []
+    diagram_rows: list[str] = []
 
     if show_up and upstream:
         for item in upstream:
@@ -117,6 +117,6 @@ def build_lineage_diagram(data: Dict[str, Any], asset_name: str, direction: str 
     return "\n".join(lines)
 
 
-def build_lineage_json(data: Dict[str, Any]) -> str:
+def build_lineage_json(data: dict[str, Any]) -> str:
     """Full lineage payload for optional expand view."""
     return f"```json\n{json.dumps(data, indent=2, default=str)}\n```"

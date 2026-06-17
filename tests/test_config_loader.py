@@ -1,9 +1,8 @@
 """Tests for config loader (.env + ${VAR} substitution)."""
 
 import os
-from pathlib import Path
 
-from src.utils.config_loader import resolve_env_placeholders, load_config
+from src.utils.config_loader import load_config, resolve_env_placeholders
 
 
 def test_resolve_env_placeholders():

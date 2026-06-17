@@ -6,8 +6,8 @@ from unittest.mock import Mock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.core.lineage_service import get_asset_lineage
 from src.core.impact_analyzer import ImpactAnalyzer
+from src.core.lineage_service import get_asset_lineage
 from src.mcp_server.tools.impact_tools import ImpactTools
 
 

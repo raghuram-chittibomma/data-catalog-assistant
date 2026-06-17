@@ -2,6 +2,7 @@
 
 import unittest
 from unittest.mock import Mock
+
 from src.mcp_server.server import MCPServer
 
 
@@ -20,10 +21,7 @@ class TestMCPServer(unittest.TestCase):
         """Test registering a tool."""
         mock_handler = Mock()
         self.server.register_tool(
-            "test_tool",
-            mock_handler,
-            "Test tool",
-            {"param1": {"type": "string"}}
+            "test_tool", mock_handler, "Test tool", {"param1": {"type": "string"}}
         )
         self.assertIn("test_tool", self.server.tools)
 
@@ -34,6 +32,7 @@ class TestMCPServer(unittest.TestCase):
 
     def test_register_resource(self):
         """Test registering a resource."""
+
         def mock_resource():
             return {"status": "ok"}
 

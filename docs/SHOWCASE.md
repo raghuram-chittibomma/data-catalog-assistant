@@ -12,7 +12,7 @@ Data teams spend time hunting for tables, SQL, and ETL jobs, tracing lineage by 
 
 ## Solution
 
-A **hybrid data intelligence POC**: semantic catalog search (vectors), deterministic lineage and change-impact (metadata graph), and **RAG-backed NL→SQL** (LLM only where generation is needed). Same capabilities are exposed via **Gradio** (demo UI) and **FastAPI MCP-style HTTP tools** (agent integration).
+A **hybrid data intelligence POC**: semantic catalog search (vectors), deterministic lineage and change-impact (metadata graph), and **RAG-backed NL→SQL** (LLM only where generation is needed). The same tool layer is exposed three ways: a **Gradio** demo UI, a **FastAPI REST API**, and a protocol-compliant **MCP server** (official `mcp` SDK, stdio) for agent integration.
 
 ## Your story (customize)
 
@@ -42,7 +42,9 @@ flowchart LR
   end
   subgraph app [Application]
     RAG[RAG Engine]
-    MCP[FastAPI MCP tools]
+    Tools[Tool handlers]
+    REST[FastAPI REST API]
+    MCP[MCP server - stdio]
     UI[Gradio UI]
   end
   DW --> Pipe
@@ -50,12 +52,14 @@ flowchart LR
   ETL --> Pipe
   Pipe --> Meta
   Pipe --> Chroma
-  Meta --> MCP
-  Meta --> UI
+  Meta --> Tools
   Chroma --> RAG
-  RAG --> MCP
-  RAG --> UI
-  MCP --> Agents[AI agents / curl]
+  RAG --> Tools
+  Tools --> REST
+  Tools --> MCP
+  Tools --> UI
+  REST --> Curl[curl / scripts]
+  MCP --> Agents[Claude Desktop / Cursor]
 ```
 
 ---
@@ -69,10 +73,11 @@ flowchart LR
 | Catalog / lineage | PostgreSQL (`bdw_rag_metadata`) | Assets, relationships, impact scores |
 | Vector search | ChromaDB + sentence-transformers (`all-MiniLM-L6-v2`) | Semantic catalog search |
 | LLM | OpenAI API (GPT-4) | NL→SQL with retrieved catalog context |
-| API | FastAPI + Uvicorn | MCP-style tools on port 3000 |
+| REST API | FastAPI + Uvicorn | HTTP tools on port 3000 |
+| MCP | Official `mcp` Python SDK | Protocol-compliant tools/resources over stdio |
 | UI | Gradio 4.x | Demo tabs with LLM/embeddings legend |
 | Batch | `run_refresh_job.py`, preflight script | Full catalog refresh |
-| Quality | pytest (~95 tests) | Unit + integration-style tests |
+| Quality | pytest (~105 tests), ruff, coverage gate | Unit + integration tests, CI lint + 60% coverage floor |
 
 ---
 
@@ -81,7 +86,7 @@ flowchart LR
 1. **Two stores, two jobs** — Chroma for fuzzy discovery; Postgres for authoritative lineage and impact (not “vectors only”).
 2. **LLM scoped to generation** — Search, lineage, validate, and impact use embeddings or metadata/rules so demos stay explainable and cheaper.
 3. **RAG before SQL** — `QueryProcessor` pulls top-k catalog snippets into the LLM prompt; response includes `tables_used`.
-4. **UI/MCP parity** — Shared `lineage_service` and `ImpactTools` so Gradio and HTTP tools stay aligned.
+4. **One tool layer, three interfaces** — Shared query/search/impact handlers back the Gradio UI, the REST API, and the MCP server, so behavior never drifts between them.
 5. **Change impact resolver** — Proposed change text can name a different table than the Asset id field; analysis follows the change target.
 6. **SQL safety** — Rule-based validator on generated SQL; blocked patterns for demo hardening.
 
@@ -96,7 +101,8 @@ flowchart LR
 | ETL sample assets | 4 |
 | Vector documents | 16 |
 | Lineage relationships | 18 |
-| Automated tests | 95 collected |
+| Tools / resources (REST + MCP) | 13 tools, 4 resources |
+| Automated tests | 105 collected |
 
 Numbers vary with config and samples; run `python batch_jobs/run_refresh_job.py` and check job output.
 
@@ -115,7 +121,7 @@ Numbers vary with config and samples; run `python batch_jobs/run_refresh_job.py`
 
 ## Limitations (say these honestly)
 
-- POC / single-tenant; no MCP auth or TLS in this repo.
+- POC / single-tenant; the MCP server and REST API have no auth or TLS in this repo.
 - Catalog refresh is **manual CLI** (`run_refresh_job.py`); scheduler loop not enabled by default.
 - Ingestion is DW schema + file-based SQL/ETL samples — not yet wired to live report/ETL servers.
 - Catalog search uses **embeddings only**; other flows (lineage, impact) use metadata/rules, not LLM.
@@ -143,7 +149,7 @@ Good interview “what’s next” talking points — detail in [MAIN_PLAN.md](M
 | [DEMO_SCRIPT.md](DEMO_SCRIPT.md) | 5-minute demo + Gradio/curl steps |
 | [MAIN_PLAN.md](MAIN_PLAN.md) | Internal phase tracker |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Deeper component notes |
-| [MCP_DEMO.md](MCP_DEMO.md) | HTTP tool examples |
+| [MCP_DEMO.md](MCP_DEMO.md) | REST + MCP tool examples |
 | [GITHUB_PUBLISH.md](GITHUB_PUBLISH.md) | Checklist to publish a clean GitHub repo |
 | [images/README.md](images/README.md) | Screenshot capture guide |
 
@@ -153,8 +159,8 @@ Good interview “what’s next” talking points — detail in [MAIN_PLAN.md](M
 
 Include the repo link: `https://github.com/raghuram-chittibomma/data-catalog-assistant`
 
-- Designed and implemented a **RAG-based data catalog assistant** combining Chroma semantic search, PostgreSQL lineage metadata, and OpenAI NL→SQL with shared FastAPI MCP tools and Gradio UI.
-- Built **ingestion pipeline** for warehouse schema, SQL files, and ETL YAML with automated refresh, impact scoring, and **95+ pytest** tests.
+- Designed and implemented a **RAG-based data catalog assistant** combining Chroma semantic search, PostgreSQL lineage metadata, and OpenAI NL→SQL, exposing a shared tool layer through a Gradio UI, a FastAPI REST API, and a protocol-compliant **MCP server** (official `mcp` SDK).
+- Built an **ingestion pipeline** for warehouse schema, SQL files, and ETL YAML with automated refresh and impact scoring, backed by **105+ pytest tests** plus a CI lint and coverage gate.
 
 ---
 

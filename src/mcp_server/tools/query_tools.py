@@ -3,7 +3,7 @@ Query tools - MCP tools for query generation.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 from src.core.query_processor import QueryProcessor
 from src.utils.sql_validator import validate_sql
@@ -28,7 +28,7 @@ class QueryTools:
         self.rag_engine = rag_engine
         logger.info("Initialized Query Tools")
 
-    def generate_query(self, description: str) -> Dict[str, Any]:
+    def generate_query(self, description: str) -> dict[str, Any]:
         """
         Generate SQL query from natural language description.
 
@@ -45,18 +45,16 @@ class QueryTools:
             if generated:
                 return generated
         if self.rag_engine:
-            return QueryProcessor.normalize_llm_result(
-                self.rag_engine.generate_query(description)
-            )
+            return QueryProcessor.normalize_llm_result(self.rag_engine.generate_query(description))
 
         return {
             "sql": "",
             "confidence": 0.0,
             "explanation": "No query processor available",
-            "tables_used": []
+            "tables_used": [],
         }
 
-    def validate_query(self, sql: str) -> Dict[str, Any]:
+    def validate_query(self, sql: str) -> dict[str, Any]:
         """
         Validate a SQL query.
 
@@ -74,19 +72,15 @@ class QueryTools:
                 return {
                     "valid": validation,
                     "errors": [] if validation else ["Query failed processor validation"],
-                    "warnings": []
+                    "warnings": [],
                 }
             if isinstance(validation, dict):
                 return validation
 
         valid, reason = validate_sql(sql)
-        return {
-            "valid": valid,
-            "errors": [] if valid else [reason],
-            "warnings": []
-        }
+        return {"valid": valid, "errors": [] if valid else [reason], "warnings": []}
 
-    def explain_query(self, sql: str) -> Dict[str, Any]:
+    def explain_query(self, sql: str) -> dict[str, Any]:
         """
         Explain what a SQL query does in plain English.
 
@@ -111,7 +105,7 @@ class QueryTools:
 
         return {"explanation": explanation}
 
-    def suggest_optimizations(self, sql: str) -> Dict[str, Any]:
+    def suggest_optimizations(self, sql: str) -> dict[str, Any]:
         """
         Suggest optimizations for a SQL query.
 
@@ -129,6 +123,8 @@ class QueryTools:
         if "join" in sql.lower() and "on" not in sql.lower():
             suggestions.append("Include an explicit JOIN condition to avoid Cartesian products.")
         if not suggestions:
-            suggestions.append("Review indexes on referenced tables and limit returned rows if possible.")
+            suggestions.append(
+                "Review indexes on referenced tables and limit returned rows if possible."
+            )
 
         return {"suggestions": suggestions}

@@ -1,10 +1,8 @@
-import sys
 import os
-from typing import List, Dict, Any
+import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import pytest
 from src.data_ingestion.datawarehouse_connector import PostgreSQLConnector
 
 
@@ -133,7 +131,12 @@ def test_postgresql_connector_schema_and_description(monkeypatch):
     }
 
     schema_rows = [
-        {"column_name": "id", "data_type": "integer", "is_nullable": "NO", "column_default": "nextval('customers_id_seq'::regclass)"},
+        {
+            "column_name": "id",
+            "data_type": "integer",
+            "is_nullable": "NO",
+            "column_default": "nextval('customers_id_seq'::regclass)",
+        },
         {"column_name": "name", "data_type": "text", "is_nullable": "YES", "column_default": None},
     ]
     description_row = [{"description": "Customer table"}]
@@ -154,7 +157,9 @@ def test_postgresql_connector_schema_and_description(monkeypatch):
     dummy_cursor = MultiResultCursor()
     dummy_conn = DummyConnection(dummy_cursor)
 
-    monkeypatch.setattr("src.data_ingestion.datawarehouse_connector.psycopg2.connect", lambda **kwargs: dummy_conn)
+    monkeypatch.setattr(
+        "src.data_ingestion.datawarehouse_connector.psycopg2.connect", lambda **kwargs: dummy_conn
+    )
 
     connector = PostgreSQLConnector(config)
     connector.connect()
@@ -164,7 +169,7 @@ def test_postgresql_connector_schema_and_description(monkeypatch):
     assert schema["table_name"] == "customers"
     assert len(schema["columns"]) == 2
     assert schema["columns"][0]["name"] == "id"
-    assert not schema["columns"][1]["nullable"] is False
+    assert schema["columns"][1]["nullable"] is not False
 
     description = connector.get_table_description("public.customers")
     assert description == "Customer table"

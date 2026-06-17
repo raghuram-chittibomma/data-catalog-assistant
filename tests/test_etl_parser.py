@@ -42,7 +42,9 @@ def test_extract_lineage_edges():
         "targets": ["public.orders_summary"],
         "dependencies": ["etl:refresh_customer_dim"],
     }
-    lineage = parser.extract_lineage(job, "etl:etl_samples/load_orders_summary.yaml#load_orders_summary")
+    lineage = parser.extract_lineage(
+        job, "etl:etl_samples/load_orders_summary.yaml#load_orders_summary"
+    )
 
     types = {edge["relationship_type"] for edge in lineage["edges"]}
     assert "etl_source" in types

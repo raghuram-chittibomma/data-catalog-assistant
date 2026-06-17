@@ -56,11 +56,51 @@ Edit `config/config.yaml` with:
 - UI port and settings
 - Batch job schedule
 
-### 6. Run Application
+### 6. Populate the index, then run
 
 ```bash
+# (Optional) verify config + connectivity before refreshing
+python scripts/preflight_refresh.py
+
+# Build/refresh the Chroma vector index + metadata store from the DW, SQL, and ETL samples
+python batch_jobs/run_refresh_job.py
+
+# Launch the Gradio UI + REST API
 python src/main.py
 ```
+
+Gradio UI: http://127.0.0.1:7860 · REST API: http://localhost:3000
+
+Re-run `python batch_jobs/run_refresh_job.py` whenever the schema or the `sql_samples/` / `etl_samples/` change.
+
+### 7. Run as an MCP server (stdio)
+
+The project also ships a real Model Context Protocol server (built on the official
+`mcp` Python SDK) that exposes the same catalog/query/impact tools to MCP-compatible
+clients (Claude Desktop, Cursor, etc.) over stdio:
+
+```bash
+python -m src.mcp_server.mcp_app
+```
+
+Example client config (e.g. Claude Desktop `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "data-catalog-assistant": {
+      "command": "python",
+      "args": ["-m", "src.mcp_server.mcp_app"],
+      "cwd": "/absolute/path/to/data-catalog-assistant",
+      "env": { "OPENAI_API_KEY": "sk-..." }
+    }
+  }
+}
+```
+
+> The REST API (`src/main.py`, port 3000) and the MCP server (`mcp_app`) wrap the
+> same underlying tool handlers — REST is convenient for HTTP/demos, MCP is the
+> protocol-compliant interface for agents.
 
 ## Configuration Details
 

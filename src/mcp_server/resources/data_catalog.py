@@ -3,7 +3,7 @@ Data catalog resource - exposes data catalog as MCP resource.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +24,12 @@ class DataCatalog:
         self.metadata_store = metadata_store
         logger.info("Initialized Data Catalog")
 
-    def _assets(self) -> List[Dict[str, Any]]:
+    def _assets(self) -> list[dict[str, Any]]:
         if not self.metadata_store:
             return []
         return list(self.metadata_store.store.get("assets", {}).values())
 
-    def get_catalog_summary(self) -> Dict[str, Any]:
+    def get_catalog_summary(self) -> dict[str, Any]:
         """
         Get summary of data catalog.
 
@@ -49,7 +49,7 @@ class DataCatalog:
         }
         return counts
 
-    def list_tables(self, pattern: str = None) -> List[Dict[str, Any]]:
+    def list_tables(self, pattern: str = None) -> list[dict[str, Any]]:
         """
         List all tables in catalog.
 
@@ -63,10 +63,15 @@ class DataCatalog:
         tables = [a for a in self._assets() if a.get("asset_type") == "table"]
         if pattern:
             pattern_lower = pattern.lower()
-            tables = [t for t in tables if pattern_lower in t.get("name", "").lower() or pattern_lower in t.get("asset_id", "").lower()]
+            tables = [
+                t
+                for t in tables
+                if pattern_lower in t.get("name", "").lower()
+                or pattern_lower in t.get("asset_id", "").lower()
+            ]
         return tables
 
-    def list_reports(self, owner: str = None) -> List[Dict[str, Any]]:
+    def list_reports(self, owner: str = None) -> list[dict[str, Any]]:
         """
         List all reports in catalog.
 
@@ -83,7 +88,7 @@ class DataCatalog:
             reports = [r for r in reports if owner_lower in str(r.get("owner", "")).lower()]
         return reports
 
-    def list_etl_processes(self) -> List[Dict[str, Any]]:
+    def list_etl_processes(self) -> list[dict[str, Any]]:
         """
         List all ETL processes.
 
@@ -93,7 +98,7 @@ class DataCatalog:
         logger.debug("Listing ETL processes")
         return [a for a in self._assets() if a.get("asset_type") == "etl"]
 
-    def get_asset_details(self, asset_id: str) -> Dict[str, Any]:
+    def get_asset_details(self, asset_id: str) -> dict[str, Any]:
         """
         Get detailed information about an asset.
 

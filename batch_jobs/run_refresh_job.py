@@ -12,8 +12,9 @@ Usage (PowerShell):
 
 Uses LocalEmbedding (sentence-transformers) from `embeddings.model_name` in config.
 """
-import sys
+
 import logging
+import sys
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
@@ -26,8 +27,8 @@ sys.path.insert(0, str(ROOT))
 from batch_jobs.refresh_vector_db import VectorDBRefreshJob
 from src.utils.config_loader import load_config
 from src.vector_store.embeddings import LocalEmbedding
-from src.vector_store.vector_db import ChromaVectorStore
 from src.vector_store.metadata_store import MetadataStore
+from src.vector_store.vector_db import ChromaVectorStore
 
 
 def build_embedding_service(cfg: dict) -> LocalEmbedding:
@@ -52,7 +53,11 @@ def main():
     job = VectorDBRefreshJob(config={})
     # ensure pipeline config is present
     job.config["datawarehouse"] = cfg.get("datawarehouse")
-    job.set_services(embedding_service=embedding_service, vector_store=vector_store, metadata_store=metadata_store)
+    job.set_services(
+        embedding_service=embedding_service,
+        vector_store=vector_store,
+        metadata_store=metadata_store,
+    )
 
     logger.info("Running VectorDBRefreshJob")
     result = job.run()

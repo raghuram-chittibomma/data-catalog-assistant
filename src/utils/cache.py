@@ -3,8 +3,8 @@ Caching utility - for caching embeddings and search results.
 """
 
 import logging
-from typing import Any, Dict, Optional
 from functools import wraps
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +25,16 @@ class Cache:
         """
         self.backend = backend
         self.ttl = ttl
-        self.memory_cache: Dict[str, Any] = {}
+        self.memory_cache: dict[str, Any] = {}
         logger.info(f"Initialized Cache with backend: {backend}")
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache."""
         if key in self.memory_cache:
             return self.memory_cache[key]
         return None
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Set value in cache."""
         self.memory_cache[key] = value
         logger.debug(f"Set cache: {key}")
@@ -71,5 +71,7 @@ def cached(ttl: int = 3600):
             result = func(*args, **kwargs)
             cache.set(cache_key, result, ttl)
             return result
+
         return wrapper
+
     return decorator

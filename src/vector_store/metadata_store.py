@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import threading
-from typing import Dict, List, Any, Optional, Union
+from typing import Any
 
 try:
     import psycopg2
@@ -29,7 +29,7 @@ class MetadataStore:
     - ETL process information
     """
 
-    def __init__(self, config: Union[str, Dict[str, Any]] = None):
+    def __init__(self, config: str | dict[str, Any] = None):
         """
         Initialize Metadata Store.
 
@@ -81,7 +81,11 @@ class MetadataStore:
     def _resolve_persist_file(self) -> str:
         file_path = None
         if isinstance(self.connection, dict):
-            file_path = self.connection.get("persist_file") or self.connection.get("file") or self.connection.get("filepath")
+            file_path = (
+                self.connection.get("persist_file")
+                or self.connection.get("file")
+                or self.connection.get("filepath")
+            )
 
         if not file_path:
             file_path = DEFAULT_METADATA_FILE
@@ -139,7 +143,9 @@ class MetadataStore:
     def _load_postgres(self) -> None:
         self._ensure_postgres_connection()
         with self.db_connection.cursor() as cursor:
-            cursor.execute("SELECT asset_id, asset_type, name, description, owner, metadata, impact_score FROM metadata_assets")
+            cursor.execute(
+                "SELECT asset_id, asset_type, name, description, owner, metadata, impact_score FROM metadata_assets"
+            )
             rows = cursor.fetchall()
             self.store["assets"] = {
                 row["asset_id"]: {
@@ -153,7 +159,9 @@ class MetadataStore:
                 }
                 for row in rows
             }
-            cursor.execute("SELECT source_asset_id, target_asset_id, relationship_type FROM metadata_relationships")
+            cursor.execute(
+                "SELECT source_asset_id, target_asset_id, relationship_type FROM metadata_relationships"
+            )
             rel_rows = cursor.fetchall()
             self.store["relationships"] = [
                 {
@@ -169,7 +177,7 @@ class MetadataStore:
             return
 
         try:
-            with open(self.persist_file, "r", encoding="utf-8") as f:
+            with open(self.persist_file, encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict):
                     self.store["assets"] = data.get("assets", {}) or {}
@@ -188,7 +196,7 @@ class MetadataStore:
         except Exception as e:
             logger.error(f"Failed to save metadata store to {self.persist_file}: {e}")
 
-    def _upsert_postgres_asset(self, asset_payload: Dict[str, Any]) -> None:
+    def _upsert_postgres_asset(self, asset_payload: dict[str, Any]) -> None:
         self._ensure_postgres_connection()
         query = """
             INSERT INTO metadata_assets (asset_id, asset_type, name, description, owner, metadata, impact_score)
@@ -216,7 +224,7 @@ class MetadataStore:
             )
             self.db_connection.commit()
 
-    def _insert_postgres_relationship(self, relationship: Dict[str, Any]) -> None:
+    def _insert_postgres_relationship(self, relationship: dict[str, Any]) -> None:
         self._ensure_postgres_connection()
         query = """
             INSERT INTO metadata_relationships (source_asset_id, target_asset_id, relationship_type)
@@ -262,7 +270,7 @@ class MetadataStore:
         name: str,
         description: str,
         owner: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """
         Register a new or updated data asset.
@@ -338,12 +346,12 @@ class MetadataStore:
 
         return True
 
-    def get_asset_metadata(self, asset_id: str) -> Optional[Dict[str, Any]]:
+    def get_asset_metadata(self, asset_id: str) -> dict[str, Any] | None:
         """Get metadata for an asset."""
         logger.debug(f"Getting metadata for: {asset_id}")
         return self.store["assets"].get(asset_id)
 
-    def get_upstream_assets(self, asset_id: str) -> List[Dict[str, Any]]:
+    def get_upstream_assets(self, asset_id: str) -> list[dict[str, Any]]:
         """Get upstream assets that feed into this asset."""
         logger.debug(f"Getting upstream assets for: {asset_id}")
         assets = []
@@ -354,14 +362,16 @@ class MetadataStore:
             if upstream_asset:
                 assets.append(upstream_asset)
             else:
-                assets.append({
-                    "asset_id": rel["source_asset_id"],
-                    "relationship_type": rel["relationship_type"],
-                    "missing": True,
-                })
+                assets.append(
+                    {
+                        "asset_id": rel["source_asset_id"],
+                        "relationship_type": rel["relationship_type"],
+                        "missing": True,
+                    }
+                )
         return assets
 
-    def get_downstream_assets(self, asset_id: str) -> List[Dict[str, Any]]:
+    def get_downstream_assets(self, asset_id: str) -> list[dict[str, Any]]:
         """Get downstream assets that depend on this asset."""
         logger.debug(f"Getting downstream assets for: {asset_id}")
         assets = []
@@ -372,11 +382,13 @@ class MetadataStore:
             if downstream_asset:
                 assets.append(downstream_asset)
             else:
-                assets.append({
-                    "asset_id": rel["target_asset_id"],
-                    "relationship_type": rel["relationship_type"],
-                    "missing": True,
-                })
+                assets.append(
+                    {
+                        "asset_id": rel["target_asset_id"],
+                        "relationship_type": rel["relationship_type"],
+                        "missing": True,
+                    }
+                )
         return assets
 
     def update_impact_score(self, asset_id: str, impact_score: float) -> bool:

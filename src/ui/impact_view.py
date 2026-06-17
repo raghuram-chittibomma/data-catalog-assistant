@@ -4,7 +4,7 @@ Human-readable impact diagrams for the Gradio UI (HTML + expandable details).
 
 import html
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.ui.lineage_view import _label, _node_id, _node_type
 
@@ -36,7 +36,7 @@ def _score_bar(score: float, width: int = 16) -> str:
     return "█" * filled + "░" * (width - filled)
 
 
-def _risk_badge(risk_level: Optional[str], score: float) -> str:
+def _risk_badge(risk_level: str | None, score: float) -> str:
     # Badge always reflects impact score (usage analysis does not pass risk_level)
     key = risk_level_from_score(score)
     color, label = _RISK_STYLES.get(key, ("#555", key.upper()))
@@ -52,7 +52,7 @@ def _asset_summary_line(item: Any) -> str:
     return _escape(_label(item))
 
 
-def _asset_details_html(item: Any, title: Optional[str] = None) -> str:
+def _asset_details_html(item: Any, title: str | None = None) -> str:
     """Click-to-expand block for one asset."""
     if isinstance(item, dict):
         payload = item
@@ -74,8 +74,8 @@ def _asset_details_html(item: Any, title: Optional[str] = None) -> str:
     )
 
 
-def _group_assets(items: List[Any]) -> Dict[str, List[Any]]:
-    groups: Dict[str, List[Any]] = {k: [] for k in _TYPE_ORDER}
+def _group_assets(items: list[Any]) -> dict[str, list[Any]]:
+    groups: dict[str, list[Any]] = {k: [] for k in _TYPE_ORDER}
     seen = set()
     for item in items:
         aid = _node_id(item)
@@ -88,21 +88,21 @@ def _group_assets(items: List[Any]) -> Dict[str, List[Any]]:
     return {k: v for k, v in groups.items() if v}
 
 
-def _collect_usage_groups(data: Dict[str, Any]) -> Dict[str, List[Any]]:
-    combined: List[Any] = []
+def _collect_usage_groups(data: dict[str, Any]) -> dict[str, list[Any]]:
+    combined: list[Any] = []
     for key in ("queries", "etl_jobs", "reports", "downstream_tables", "downstream"):
         combined.extend(list(data.get(key) or []))
     return _group_assets(combined)
 
 
-def _collect_change_groups(data: Dict[str, Any]) -> Dict[str, List[Any]]:
-    combined: List[Any] = []
+def _collect_change_groups(data: dict[str, Any]) -> dict[str, list[Any]]:
+    combined: list[Any] = []
     for key in ("affected_queries", "affected_etl", "affected_reports"):
         combined.extend(list(data.get(key) or []))
     return _group_assets(combined)
 
 
-def _center_meta(data: Dict[str, Any], fallback: str) -> Tuple[str, str]:
+def _center_meta(data: dict[str, Any], fallback: str) -> tuple[str, str]:
     asset = data.get("asset")
     if isinstance(asset, dict):
         center = str(asset.get("asset_id") or asset.get("name") or fallback).strip()
@@ -111,8 +111,8 @@ def _center_meta(data: Dict[str, Any], fallback: str) -> Tuple[str, str]:
     return center or fallback, ""
 
 
-def _ascii_impact_tree(center: str, center_type: str, groups: Dict[str, List[Any]]) -> str:
-    rows: List[str] = []
+def _ascii_impact_tree(center: str, center_type: str, groups: dict[str, list[Any]]) -> str:
+    rows: list[str] = []
     center_line = f"  ▶ {center}"
     if center_type:
         center_line += f" ({center_type})"
@@ -154,7 +154,7 @@ def _impact_styles() -> str:
 """
 
 
-def build_usage_impact_html(data: Dict[str, Any], asset_name: str) -> str:
+def build_usage_impact_html(data: dict[str, Any], asset_name: str) -> str:
     """Usage analysis: hierarchical tree + expandable asset details."""
     center, center_type = _center_meta(data, asset_name)
     score = float(data.get("impact_score", 0.0) or 0.0)
@@ -171,8 +171,14 @@ def build_usage_impact_html(data: Dict[str, Any], asset_name: str) -> str:
         '<div class="bdw-section"><strong>Assets (click to expand details)</strong>',
         f"<details class='bdw-details'><summary>▶ Center: {_escape(_label(data.get('asset') or center))}</summary>",
     ]
-    center_payload = data.get("asset") if isinstance(data.get("asset"), dict) else {"asset_id": center, "asset_type": center_type}
-    parts.append(f"<pre class='bdw-pre'>{_escape(json.dumps(center_payload, indent=2, default=str))}</pre></details>")
+    center_payload = (
+        data.get("asset")
+        if isinstance(data.get("asset"), dict)
+        else {"asset_id": center, "asset_type": center_type}
+    )
+    parts.append(
+        f"<pre class='bdw-pre'>{_escape(json.dumps(center_payload, indent=2, default=str))}</pre></details>"
+    )
 
     for atype in _TYPE_ORDER:
         for item in groups.get(atype, []):
@@ -186,9 +192,9 @@ def build_usage_impact_html(data: Dict[str, Any], asset_name: str) -> str:
 
 
 def build_change_impact_html(
-    data: Dict[str, Any],
+    data: dict[str, Any],
     asset_name: str,
-    resolution_warning: Optional[str] = None,
+    resolution_warning: str | None = None,
 ) -> str:
     """Change assessment: risk badge + blast-radius tree + expandable affected assets."""
     center, center_type = _center_meta(data, asset_name)
@@ -205,13 +211,15 @@ def build_change_impact_html(
         f"<p>{_risk_badge(risk, score)} · <span>Dependents: <strong>{downstream_count}</strong></span></p>",
     ]
     if change:
-        parts.append(f'<div class="bdw-change"><strong>Proposed change:</strong> {_escape(change)}</div>')
+        parts.append(
+            f'<div class="bdw-change"><strong>Proposed change:</strong> {_escape(change)}</div>'
+        )
     warn = resolution_warning or data.get("resolution_warning")
     if warn:
         parts.append(f'<div class="bdw-warn"><strong>Note:</strong> {_escape(warn)}</div>')
     if data.get("asset_resolved_from") == "change_text":
         parts.append(
-            f'<p><em>Blast radius is for <code>{_escape(center)}</code> '
+            f"<p><em>Blast radius is for <code>{_escape(center)}</code> "
             f"(parsed from proposed change text).</em></p>"
         )
 
@@ -223,8 +231,14 @@ def build_change_impact_html(
             f"<details class='bdw-details'><summary>▶ Source: {_escape(_label(data.get('asset') or center))}</summary>",
         ]
     )
-    center_payload = data.get("asset") if isinstance(data.get("asset"), dict) else {"asset_id": center, "asset_type": center_type}
-    parts.append(f"<pre class='bdw-pre'>{_escape(json.dumps(center_payload, indent=2, default=str))}</pre></details>")
+    center_payload = (
+        data.get("asset")
+        if isinstance(data.get("asset"), dict)
+        else {"asset_id": center, "asset_type": center_type}
+    )
+    parts.append(
+        f"<pre class='bdw-pre'>{_escape(json.dumps(center_payload, indent=2, default=str))}</pre></details>"
+    )
 
     for atype in _TYPE_ORDER:
         for item in groups.get(atype, []):
@@ -237,5 +251,5 @@ def build_change_impact_html(
     return "\n".join(parts)
 
 
-def build_impact_json(data: Dict[str, Any]) -> str:
+def build_impact_json(data: dict[str, Any]) -> str:
     return f"```json\n{json.dumps(data, indent=2, default=str)}\n```"

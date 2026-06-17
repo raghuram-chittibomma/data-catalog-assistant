@@ -6,7 +6,7 @@ blindly reuse the Asset id field (often left from a prior usage analysis).
 """
 
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 # schema.table or table after "on" / "to" / "from"
 _QUALIFIED_TABLE = re.compile(
@@ -37,7 +37,7 @@ def _normalize_table_ref(name: str, default_schema: str = "public") -> str:
 def extract_asset_from_change_description(
     change_description: str,
     default_schema: str = "public",
-) -> Optional[str]:
+) -> str | None:
     """
     Parse a target table from free-text change descriptions.
 
@@ -67,7 +67,7 @@ def resolve_change_target_asset(
     field_asset: str,
     change_description: str,
     default_schema: str = "public",
-) -> Tuple[str, Dict[str, Any]]:
+) -> tuple[str, dict[str, Any]]:
     """
     Pick the asset id to analyze for assess_change_impact.
 
@@ -81,7 +81,7 @@ def resolve_change_target_asset(
     field_asset = (field_asset or "").strip()
     inferred = extract_asset_from_change_description(change_description, default_schema)
 
-    meta: Dict[str, Any] = {
+    meta: dict[str, Any] = {
         "field_asset": field_asset or None,
         "inferred_asset": inferred,
         "source": "field",

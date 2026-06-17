@@ -1,7 +1,7 @@
 """Tests for Vector Store."""
 
 import unittest
-from unittest.mock import Mock
+
 from src.vector_store.vector_db import ChromaVectorStore
 
 
@@ -19,10 +19,7 @@ class TestVectorStore(unittest.TestCase):
 
     def test_add_documents(self):
         """Test adding documents."""
-        documents = [
-            {"id": "1", "text": "Test document 1"},
-            {"id": "2", "text": "Test document 2"}
-        ]
+        documents = [{"id": "1", "text": "Test document 1"}, {"id": "2", "text": "Test document 2"}]
         embeddings = [[0.1] * 384, [0.2] * 384]
         # TODO: Mock and test
 

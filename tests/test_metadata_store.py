@@ -1,10 +1,10 @@
 import json
 import os
 import shutil
-import tempfile
 import sys
+import tempfile
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.vector_store.metadata_store import MetadataStore
 
@@ -13,12 +13,7 @@ def test_metadata_store_json_persistence():
     temp_dir = tempfile.mkdtemp()
     try:
         metadata_file = os.path.join(temp_dir, "metadata_store.json")
-        config = {
-            "type": "json",
-            "connection": {
-                "file": metadata_file
-            }
-        }
+        config = {"type": "json", "connection": {"file": metadata_file}}
 
         store = MetadataStore(config=config)
         assert store.register_data_asset(
@@ -27,7 +22,11 @@ def test_metadata_store_json_persistence():
             name="customer",
             description="Customer table metadata",
             owner="data_owner",
-            metadata={"schema": "public", "source_asset_id": "source_table", "target_asset_id": "customer_table"}
+            metadata={
+                "schema": "public",
+                "source_asset_id": "source_table",
+                "target_asset_id": "customer_table",
+            },
         )
 
         assert store.add_lineage_relationship("source_table", "customer_table", "feeds_into")
@@ -52,7 +51,7 @@ def test_metadata_store_json_persistence():
         assert persisted_asset["impact_score"] == 0.75
         assert os.path.exists(metadata_file)
 
-        with open(metadata_file, "r", encoding="utf-8") as f:
+        with open(metadata_file, encoding="utf-8") as f:
             data = json.load(f)
             assert data["assets"]["customer_table"]["name"] == "customer"
     finally:

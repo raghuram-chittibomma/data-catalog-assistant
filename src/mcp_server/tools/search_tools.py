@@ -3,7 +3,7 @@ Search tools - MCP tools for vector search operations.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class SearchTools:
         self.rag_engine = rag_engine
         logger.info("Initialized Search Tools")
 
-    def _asset_dict(self, result) -> Dict[str, Any]:
+    def _asset_dict(self, result) -> dict[str, Any]:
         return {
             "data_asset": result.data_asset,
             "description": result.description,
@@ -33,7 +33,7 @@ class SearchTools:
             "impact_info": result.impact_info,
         }
 
-    def search_data_assets(self, query: str, top_k: int = 5) -> Dict[str, Any]:
+    def search_data_assets(self, query: str, top_k: int = 5) -> dict[str, Any]:
         """
         Search for data assets by description or keywords.
 
@@ -50,12 +50,9 @@ class SearchTools:
             return {"results": [], "total": 0}
 
         hits = self.rag_engine.search_data_lineage(query, top_k=top_k)
-        return {
-            "results": [self._asset_dict(hit) for hit in hits],
-            "total": len(hits)
-        }
+        return {"results": [self._asset_dict(hit) for hit in hits], "total": len(hits)}
 
-    def search_similar_queries(self, query: str, top_k: int = 3) -> Dict[str, Any]:
+    def search_similar_queries(self, query: str, top_k: int = 3) -> dict[str, Any]:
         """
         Find similar queries/reports in the system.
 
@@ -72,12 +69,9 @@ class SearchTools:
             return {"results": [], "total": 0}
 
         hits = self.rag_engine.search_data_lineage(query, top_k=top_k)
-        return {
-            "results": [self._asset_dict(hit) for hit in hits],
-            "total": len(hits)
-        }
+        return {"results": [self._asset_dict(hit) for hit in hits], "total": len(hits)}
 
-    def search_by_table(self, table_name: str) -> Dict[str, Any]:
+    def search_by_table(self, table_name: str) -> dict[str, Any]:
         """
         Search all information related to a specific table.
 
@@ -98,10 +92,10 @@ class SearchTools:
         return {
             "metadata": metadata,
             "related_queries": [],
-            "usage": {"upstream": upstream, "downstream": downstream}
+            "usage": {"upstream": upstream, "downstream": downstream},
         }
 
-    def search_by_owner(self, owner: str) -> Dict[str, Any]:
+    def search_by_owner(self, owner: str) -> dict[str, Any]:
         """
         Find all data assets owned by a specific person/team.
 
@@ -118,7 +112,8 @@ class SearchTools:
 
         owner_lower = owner.lower()
         assets = [
-            asset for asset in self.rag_engine.metadata_store.store.get("assets", {}).values()
+            asset
+            for asset in self.rag_engine.metadata_store.store.get("assets", {}).values()
             if owner_lower in str(asset.get("owner", "")).lower()
         ]
         return {"assets": assets, "total": len(assets)}

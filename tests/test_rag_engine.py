@@ -1,5 +1,3 @@
-import pytest
-
 from src.core.rag_engine import RAGEngine
 
 
@@ -15,7 +13,12 @@ class FakeLLM:
 
 def test_generate_query_success():
     fake = FakeLLM("SELECT id, name FROM customers LIMIT 10\nEXPLANATION: simple")
-    engine = RAGEngine(vector_store=None, llm_client=fake, embedding_service=None, config={"llm": {"provider": "openai", "model": "gpt-4"}})
+    engine = RAGEngine(
+        vector_store=None,
+        llm_client=fake,
+        embedding_service=None,
+        config={"llm": {"provider": "openai", "model": "gpt-4"}},
+    )
     out = engine.generate_query("List customers who placed orders in 2023 limit 10")
     assert isinstance(out, dict)
     assert out["query"].strip().lower().startswith("select")
@@ -25,16 +28,22 @@ def test_generate_query_success():
 def test_generate_query_safety_block():
     # Model returns dangerous SQL which should be blocked by safety checks
     fake = FakeLLM("DROP TABLE users;")
-    engine = RAGEngine(vector_store=None, llm_client=fake, embedding_service=None, config={"llm": {"provider": "openai", "model": "gpt-4"}})
+    engine = RAGEngine(
+        vector_store=None,
+        llm_client=fake,
+        embedding_service=None,
+        config={"llm": {"provider": "openai", "model": "gpt-4"}},
+    )
     out = engine.generate_query("Remove all users")
     assert isinstance(out, dict)
     assert out["query"] == ""
     assert "Safety check failed" in out["explanation"]
+
+
 """Tests for RAG Engine."""
 
 import unittest
-from unittest.mock import Mock, MagicMock
-from src.core.rag_engine import RAGEngine
+from unittest.mock import Mock
 
 
 class TestRAGEngine(unittest.TestCase):
@@ -44,10 +53,7 @@ class TestRAGEngine(unittest.TestCase):
         """Set up test fixtures."""
         self.mock_vector_store = Mock()
         self.mock_llm = Mock()
-        self.rag_engine = RAGEngine(
-            vector_store=self.mock_vector_store,
-            llm_client=self.mock_llm
-        )
+        self.rag_engine = RAGEngine(vector_store=self.mock_vector_store, llm_client=self.mock_llm)
 
     def test_rag_engine_initialization(self):
         """Test RAG Engine initialization."""

@@ -3,7 +3,7 @@ Impact tools - MCP tools for data impact and lineage analysis.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 from src.utils.change_asset_resolver import resolve_change_target_asset
 
@@ -25,7 +25,7 @@ class ImpactTools:
         self.impact_analyzer = impact_analyzer
         logger.info("Initialized Impact Tools")
 
-    def analyze_data_usage(self, data_asset: str) -> Dict[str, Any]:
+    def analyze_data_usage(self, data_asset: str) -> dict[str, Any]:
         """
         Analyze where a data asset is used and its impact.
 
@@ -48,9 +48,7 @@ class ImpactTools:
 
         usage = self.impact_analyzer.analyze_data_usage(data_asset)
         downstream = usage.get("downstream", [])
-        downstream_tables = [
-            a for a in downstream if a.get("asset_type") == "table"
-        ]
+        downstream_tables = [a for a in downstream if a.get("asset_type") == "table"]
         return {
             "asset": usage.get("asset"),
             "asset_id": usage.get("asset_id", data_asset),
@@ -62,7 +60,7 @@ class ImpactTools:
             "impact_score": usage.get("impact_score", 0.0),
         }
 
-    def get_lineage(self, data_asset: str, direction: str = "both") -> Dict[str, Any]:
+    def get_lineage(self, data_asset: str, direction: str = "both") -> dict[str, Any]:
         """
         Get lineage for a data asset.
 
@@ -86,7 +84,7 @@ class ImpactTools:
 
         return self.impact_analyzer.get_lineage(data_asset, direction=direction)
 
-    def assess_change_impact(self, data_asset: str, change_description: str) -> Dict[str, Any]:
+    def assess_change_impact(self, data_asset: str, change_description: str) -> dict[str, Any]:
         """
         Assess impact of a change to a data asset.
 
@@ -158,7 +156,7 @@ class ImpactTools:
             "risk_level": risk_level,
         }
 
-    def compare_data_assets(self, asset1: str, asset2: str) -> Dict[str, Any]:
+    def compare_data_assets(self, asset1: str, asset2: str) -> dict[str, Any]:
         """
         Compare two data assets.
 
@@ -172,17 +170,20 @@ class ImpactTools:
         """
         logger.debug(f"Comparing: {asset1} vs {asset2}")
         if not self.impact_analyzer:
-            return {
-                "similarities": [],
-                "differences": []
-            }
+            return {"similarities": [], "differences": []}
 
         asset1_upstream = self.impact_analyzer.get_upstream_lineage(asset1).get("upstream", [])
         asset2_upstream = self.impact_analyzer.get_upstream_lineage(asset2).get("upstream", [])
-        asset1_downstream = self.impact_analyzer.get_downstream_lineage(asset1).get("downstream", [])
-        asset2_downstream = self.impact_analyzer.get_downstream_lineage(asset2).get("downstream", [])
+        asset1_downstream = self.impact_analyzer.get_downstream_lineage(asset1).get(
+            "downstream", []
+        )
+        asset2_downstream = self.impact_analyzer.get_downstream_lineage(asset2).get(
+            "downstream", []
+        )
 
-        similarities = [a for a in asset1_upstream if a in asset2_upstream] + [a for a in asset1_downstream if a in asset2_downstream]
+        similarities = [a for a in asset1_upstream if a in asset2_upstream] + [
+            a for a in asset1_downstream if a in asset2_downstream
+        ]
         differences = {
             "asset1_only_upstream": [a for a in asset1_upstream if a not in asset2_upstream],
             "asset2_only_upstream": [a for a in asset2_upstream if a not in asset1_upstream],
@@ -190,7 +191,4 @@ class ImpactTools:
             "asset2_only_downstream": [a for a in asset2_downstream if a not in asset1_downstream],
         }
 
-        return {
-            "similarities": similarities,
-            "differences": differences
-        }
+        return {"similarities": similarities, "differences": differences}

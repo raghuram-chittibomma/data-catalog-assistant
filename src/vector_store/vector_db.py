@@ -3,8 +3,8 @@ Vector database interface — ChromaDB implementation.
 """
 
 import logging
-from typing import List, Dict, Any, Tuple
 from abc import ABC, abstractmethod
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class VectorStore(ABC):
         pass
 
     @abstractmethod
-    def add_documents(self, documents: List[Dict[str, Any]], embeddings: List[List[float]]):
+    def add_documents(self, documents: list[dict[str, Any]], embeddings: list[list[float]]):
         """
         Add documents with their embeddings.
 
@@ -29,7 +29,7 @@ class VectorStore(ABC):
         pass
 
     @abstractmethod
-    def search(self, query_embedding: List[float], top_k: int = 5) -> List[Tuple[Dict, float]]:
+    def search(self, query_embedding: list[float], top_k: int = 5) -> list[tuple[dict, float]]:
         """
         Search for similar documents.
 
@@ -43,7 +43,7 @@ class VectorStore(ABC):
         pass
 
     @abstractmethod
-    def update_document(self, doc_id: str, metadata: Dict[str, Any]):
+    def update_document(self, doc_id: str, metadata: dict[str, Any]):
         """Update document metadata."""
         pass
 
@@ -83,9 +83,13 @@ class ChromaVectorStore(VectorStore):
             chroma_impl = None
             # Accept config keys: backend.persist_directory, chroma_impl
             backend_conf = self.config.get("backend", {}) if isinstance(self.config, dict) else {}
-            persist_directory = backend_conf.get("persist_directory") or self.config.get("persist_directory")
+            persist_directory = backend_conf.get("persist_directory") or self.config.get(
+                "persist_directory"
+            )
             chroma_db_impl = backend_conf.get("chroma_db_impl") or self.config.get("chroma_db_impl")
-            chroma_api_impl = backend_conf.get("chroma_api_impl") or self.config.get("chroma_api_impl")
+            chroma_api_impl = backend_conf.get("chroma_api_impl") or self.config.get(
+                "chroma_api_impl"
+            )
             chroma_impl = backend_conf.get("chroma_impl") or self.config.get("chroma_impl")
 
             if persist_directory:
@@ -113,8 +117,8 @@ class ChromaVectorStore(VectorStore):
 
     def add_documents(
         self,
-        documents: List[Dict[str, Any]],
-        embeddings: List[List[float]],
+        documents: list[dict[str, Any]],
+        embeddings: list[list[float]],
         upsert: bool = True,
     ):
         """Add or upsert documents in Chroma (upsert avoids duplicate ID errors on refresh)."""
@@ -156,7 +160,7 @@ class ChromaVectorStore(VectorStore):
             raise
 
     @staticmethod
-    def _sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def _sanitize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         """Chroma metadata values must be str, int, float, or bool."""
         sanitized = {}
         for key, value in metadata.items():
@@ -170,13 +174,17 @@ class ChromaVectorStore(VectorStore):
                 sanitized[key] = str(value)
         return sanitized
 
-    def search(self, query_embedding: List[float], top_k: int = 5) -> List[Tuple[Dict, float]]:
+    def search(self, query_embedding: list[float], top_k: int = 5) -> list[tuple[dict, float]]:
         """Search Chroma for similar documents."""
         if not self.client or not self.collection:
             self.connect()
 
         try:
-            result = self.collection.query(query_embeddings=[query_embedding], n_results=top_k, include=["metadatas", "documents", "distances"])
+            result = self.collection.query(
+                query_embeddings=[query_embedding],
+                n_results=top_k,
+                include=["metadatas", "documents", "distances"],
+            )
             results = []
             # result is a dict with lists
             distances_list = result.get("distances", [[]])[0]
@@ -210,7 +218,7 @@ class ChromaVectorStore(VectorStore):
             logger.error(f"Error searching Chroma: {e}")
             return []
 
-    def update_document(self, doc_id: str, metadata: Dict[str, Any]):
+    def update_document(self, doc_id: str, metadata: dict[str, Any]):
         """Update document in Chroma."""
         if not self.client or not self.collection:
             self.connect()

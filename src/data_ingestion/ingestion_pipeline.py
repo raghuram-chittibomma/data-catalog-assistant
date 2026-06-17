@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 
 from src.data_ingestion.data_processor import DataProcessor
 from src.data_ingestion.datawarehouse_connector import PostgreSQLConnector
@@ -18,7 +18,9 @@ _ETL_SUFFIXES = {".yaml", ".yml", ".json"}
 class IngestionPipeline:
     """Pipeline that turns DW metadata, SQL files, and ETL configs into embedding documents."""
 
-    def __init__(self, config: Dict[str, Any] = None, connector=None, processor=None, embedding_service=None):
+    def __init__(
+        self, config: dict[str, Any] = None, connector=None, processor=None, embedding_service=None
+    ):
         self.config = config or {}
         self.connector = connector or self._build_connector()
         ingest = self.config.get("ingest", {}) if isinstance(self.config, dict) else {}
@@ -49,9 +51,7 @@ class IngestionPipeline:
         if backend in ("postgres", "postgresql"):
             return PostgreSQLConnector(connection, ingest=ingest)
 
-        raise ValueError(
-            f"Unsupported data warehouse backend: {backend}. Use postgresql."
-        )
+        raise ValueError(f"Unsupported data warehouse backend: {backend}. Use postgresql.")
 
     def _resolve_path(self, path: str) -> Path:
         candidate = Path(path)
@@ -69,7 +69,7 @@ class IngestionPipeline:
             rel_source = str(file_path)
         return rel_source.replace("\\", "/")
 
-    def fetch_sql_files(self) -> List[Dict[str, Any]]:
+    def fetch_sql_files(self) -> list[dict[str, Any]]:
         """Load SQL files from configured paths and parse them."""
         ingest = self.config.get("ingest", {}) if isinstance(self.config, dict) else {}
         sql_paths = ingest.get("sql_paths") or []
@@ -77,7 +77,7 @@ class IngestionPipeline:
             logger.debug("No sql_paths configured; skipping SQL file ingestion")
             return []
 
-        sql_files: List[Dict[str, Any]] = []
+        sql_files: list[dict[str, Any]] = []
         seen_paths = set()
 
         for configured_path in sql_paths:
@@ -86,7 +86,7 @@ class IngestionPipeline:
                 logger.warning("SQL path does not exist: %s", resolved)
                 continue
 
-            paths_to_read: List[Path] = []
+            paths_to_read: list[Path] = []
             if resolved.is_file() and resolved.suffix.lower() == ".sql":
                 paths_to_read = [resolved]
             elif resolved.is_dir():
@@ -123,7 +123,7 @@ class IngestionPipeline:
         logger.info("Loaded %s SQL files from %s path(s)", len(sql_files), len(sql_paths))
         return sql_files
 
-    def fetch_etl_configs(self) -> List[Dict[str, Any]]:
+    def fetch_etl_configs(self) -> list[dict[str, Any]]:
         """Load ETL YAML/JSON configs from configured paths."""
         ingest = self.config.get("ingest", {}) if isinstance(self.config, dict) else {}
         etl_paths = ingest.get("etl_paths") or []
@@ -131,7 +131,7 @@ class IngestionPipeline:
             logger.debug("No etl_paths configured; skipping ETL ingestion")
             return []
 
-        etl_items: List[Dict[str, Any]] = []
+        etl_items: list[dict[str, Any]] = []
         seen_jobs = set()
 
         for configured_path in etl_paths:
@@ -140,7 +140,7 @@ class IngestionPipeline:
                 logger.warning("ETL path does not exist: %s", resolved)
                 continue
 
-            paths_to_read: List[Path] = []
+            paths_to_read: list[Path] = []
             if resolved.is_file() and resolved.suffix.lower() in _ETL_SUFFIXES:
                 paths_to_read = [resolved]
             elif resolved.is_dir():
@@ -175,7 +175,7 @@ class IngestionPipeline:
         logger.info("Loaded %s ETL job(s) from %s path(s)", len(etl_items), len(etl_paths))
         return etl_items
 
-    def fetch_table_metadata(self) -> List[Dict[str, Any]]:
+    def fetch_table_metadata(self) -> list[dict[str, Any]]:
         self.connector.connect()
         if hasattr(self.connector, "fetch_tables_metadata"):
             return self.connector.fetch_tables_metadata()
@@ -197,27 +197,29 @@ class IngestionPipeline:
                 "name": table_name,
                 "owner": default_owner,
             }
-            documents.append({
-                "table_name": table_name,
-                "schema": schema,
-                "description": description,
-                "metadata": metadata,
-            })
+            documents.append(
+                {
+                    "table_name": table_name,
+                    "schema": schema,
+                    "description": description,
+                    "metadata": metadata,
+                }
+            )
 
         return documents
 
     def build_documents(
         self,
-        table_metadata: List[Dict[str, Any]],
-        sql_files: List[Dict[str, Any]] = None,
-        etl_configs: List[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        table_metadata: list[dict[str, Any]],
+        sql_files: list[dict[str, Any]] = None,
+        etl_configs: list[dict[str, Any]] = None,
+    ) -> list[dict[str, Any]]:
         table_docs = self.processor.batch_process_tables(table_metadata)
         sql_docs = self.processor.batch_process_sql_files(sql_files or [])
         etl_docs = self.processor.batch_process_etl_configs(etl_configs or [])
         return table_docs + sql_docs + etl_docs
 
-    def run(self) -> List[Dict[str, Any]]:
+    def run(self) -> list[dict[str, Any]]:
         """Fetch DW metadata, SQL files, and ETL configs; return embedding-ready documents."""
         logger.info("Running ingestion pipeline")
         try:

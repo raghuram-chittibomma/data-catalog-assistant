@@ -3,10 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-from unittest.mock import Mock
-
-import pytest
+from typing import Any
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -25,16 +22,16 @@ class _Hit:
 class RecordingRAGEngine:
     """Minimal stand-in for RAGEngine in unit tests."""
 
-    def __init__(self, hits: List[SearchResult], llm_response: Dict[str, Any]):
+    def __init__(self, hits: list[SearchResult], llm_response: dict[str, Any]):
         self._hits = hits
         self._llm_response = llm_response
-        self.last_catalog_context: Optional[str] = None
-        self.last_nl: Optional[str] = None
+        self.last_catalog_context: str | None = None
+        self.last_nl: str | None = None
 
     def search_data_lineage(self, query: str, top_k: int = 5):
         return self._hits[:top_k]
 
-    def generate_query(self, natural_language: str, catalog_context: Optional[str] = None):
+    def generate_query(self, natural_language: str, catalog_context: str | None = None):
         self.last_nl = natural_language
         self.last_catalog_context = catalog_context
         return self._llm_response
@@ -92,7 +89,7 @@ def test_process_passes_catalog_context_to_llm():
 class MessageCapturingLLM:
     def __init__(self, response_text: str):
         self.response_text = response_text
-        self.messages: List[Dict[str, str]] = []
+        self.messages: list[dict[str, str]] = []
 
     def create(self, model, messages, temperature=0.0, max_tokens=512):
         self.messages = messages

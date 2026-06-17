@@ -3,14 +3,15 @@
 These tests will be skipped if `chromadb` is not installed in the environment.
 """
 
+import sys
 import unittest
 from pathlib import Path
-import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
     import chromadb  # noqa: F401
+
     CHROMADB_AVAILABLE = True
 except Exception:
     CHROMADB_AVAILABLE = False
@@ -20,7 +21,6 @@ from src.vector_store.vector_db import ChromaVectorStore
 
 @unittest.skipUnless(CHROMADB_AVAILABLE, "chromadb not installed - skipping integration tests")
 class TestChromaIntegration(unittest.TestCase):
-
     def test_add_and_search(self):
         cfg = {"collection_name": "test_collection_integration"}
         vs = ChromaVectorStore(config=cfg)
@@ -40,5 +40,5 @@ class TestChromaIntegration(unittest.TestCase):
         self.assertIn(top_doc.get("id"), {"t1", "t2"})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

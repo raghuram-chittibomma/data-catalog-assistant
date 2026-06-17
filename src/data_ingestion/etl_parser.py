@@ -5,7 +5,7 @@ ETL parser - extracts information from ETL process definitions (YAML/JSON).
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import yaml
 
@@ -21,7 +21,7 @@ class ETLParser:
         self.default_schema = default_schema
         logger.info("Initialized ETL Parser (default_schema=%s)", default_schema)
 
-    def parse_etl_config(self, config_file: Union[str, Path]) -> List[Dict[str, Any]]:
+    def parse_etl_config(self, config_file: str | Path) -> list[dict[str, Any]]:
         """
         Parse an ETL configuration file (YAML or JSON).
 
@@ -52,7 +52,7 @@ class ETLParser:
         except yaml.YAMLError:
             return json.loads(raw_text)
 
-    def _extract_jobs(self, data: Any) -> List[Dict[str, Any]]:
+    def _extract_jobs(self, data: Any) -> list[dict[str, Any]]:
         if data is None:
             return []
         if isinstance(data, list):
@@ -64,7 +64,7 @@ class ETLParser:
             return [data]
         return []
 
-    def _normalize_job(self, job: Dict[str, Any], path: Path) -> Dict[str, Any]:
+    def _normalize_job(self, job: dict[str, Any], path: Path) -> dict[str, Any]:
         name = job.get("name") or path.stem
         sources = [self._normalize_table(t) for t in job.get("sources", []) if t]
         targets = [self._normalize_table(t) for t in job.get("targets", []) if t]
@@ -90,13 +90,13 @@ class ETLParser:
             return cleaned.lower()
         return f"{self.default_schema}.{cleaned.lower()}"
 
-    def extract_lineage(self, etl_config: Dict[str, Any], etl_asset_id: str) -> Dict[str, Any]:
+    def extract_lineage(self, etl_config: dict[str, Any], etl_asset_id: str) -> dict[str, Any]:
         """
         Build lineage edges for an ETL job.
 
         Sources feed the ETL; the ETL writes to targets.
         """
-        edges: List[Dict[str, str]] = []
+        edges: list[dict[str, str]] = []
 
         for source in etl_config.get("sources", []):
             edges.append(
@@ -127,7 +127,11 @@ class ETLParser:
                     }
                 )
 
-        return {"edges": edges, "sources": etl_config.get("sources", []), "targets": etl_config.get("targets", [])}
+        return {
+            "edges": edges,
+            "sources": etl_config.get("sources", []),
+            "targets": etl_config.get("targets", []),
+        }
 
     def _normalize_dependency(self, dep: Any) -> str:
         if isinstance(dep, dict):
@@ -142,7 +146,7 @@ class ETLParser:
             return f"etl:{text}"
         return ""
 
-    def generate_documentation(self, etl_config: Dict[str, Any]) -> str:
+    def generate_documentation(self, etl_config: dict[str, Any]) -> str:
         """Generate a short human-readable description for an ETL job."""
         name = etl_config.get("name", "unknown")
         description = etl_config.get("description", "")

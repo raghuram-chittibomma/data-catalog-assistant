@@ -15,8 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.utils.config_loader import load_config
 from src.data_ingestion.ingestion_pipeline import IngestionPipeline
+from src.utils.config_loader import load_config
 
 logging.basicConfig(
     level=logging.INFO,

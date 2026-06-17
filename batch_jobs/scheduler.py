@@ -3,9 +3,9 @@ Job scheduler - manages batch job execution.
 """
 
 import logging
+from collections.abc import Callable
+
 import schedule
-from typing import Callable, Optional
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -31,16 +31,15 @@ class JobScheduler:
         """
         job_name = name or job_func.__name__
         logger.info(f"Scheduling daily job '{job_name}' at {time}")
-        
-        schedule.every().day.at(time).do(self._run_job, job_func, job_name)
-        self.scheduled_jobs.append({
-            "name": job_name,
-            "frequency": "daily",
-            "time": time,
-            "next_run": None
-        })
 
-    def schedule_periodic_job(self, job_func: Callable, interval: int, unit: str = "hours", name: str = None) -> None:
+        schedule.every().day.at(time).do(self._run_job, job_func, job_name)
+        self.scheduled_jobs.append(
+            {"name": job_name, "frequency": "daily", "time": time, "next_run": None}
+        )
+
+    def schedule_periodic_job(
+        self, job_func: Callable, interval: int, unit: str = "hours", name: str = None
+    ) -> None:
         """
         Schedule a job to run periodically.
 
@@ -52,7 +51,7 @@ class JobScheduler:
         """
         job_name = name or job_func.__name__
         logger.info(f"Scheduling periodic job '{job_name}' every {interval} {unit}")
-        
+
         if unit == "seconds":
             schedule.every(interval).seconds.do(self._run_job, job_func, job_name)
         elif unit == "minutes":
@@ -61,12 +60,10 @@ class JobScheduler:
             schedule.every(interval).hours.do(self._run_job, job_func, job_name)
         elif unit == "days":
             schedule.every(interval).days.do(self._run_job, job_func, job_name)
-        
-        self.scheduled_jobs.append({
-            "name": job_name,
-            "frequency": f"every {interval} {unit}",
-            "next_run": None
-        })
+
+        self.scheduled_jobs.append(
+            {"name": job_name, "frequency": f"every {interval} {unit}", "next_run": None}
+        )
 
     def start(self) -> None:
         """Start the scheduler."""

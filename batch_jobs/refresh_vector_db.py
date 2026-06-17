@@ -3,9 +3,8 @@ Batch jobs for overnight refresh of vector database.
 """
 
 import logging
-import schedule
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 from src.core.impact_analyzer import ImpactAnalyzer
 from src.data_ingestion.ingestion_pipeline import IngestionPipeline
@@ -18,7 +17,7 @@ class VectorDBRefreshJob:
     Overnight batch job to refresh vector database with new DW updates.
     """
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         """
         Initialize refresh job.
 
@@ -40,7 +39,7 @@ class VectorDBRefreshJob:
         self.vector_store = vector_store
         self.metadata_store = metadata_store
 
-    def run(self) -> Dict[str, Any]:
+    def run(self) -> dict[str, Any]:
         """
         Run the refresh job.
 
@@ -52,11 +51,7 @@ class VectorDBRefreshJob:
         self.is_running = True
 
         try:
-            summary = {
-                "start_time": start_time,
-                "status": "running",
-                "steps": []
-            }
+            summary = {"start_time": start_time, "status": "running", "steps": []}
 
             # Step 1: Connect to DW and fetch updates
             logger.info("Step 1: Fetching updates from data warehouse")
@@ -97,15 +92,11 @@ class VectorDBRefreshJob:
 
         except Exception as e:
             logger.error(f"Vector DB refresh failed: {str(e)}")
-            return {
-                "start_time": start_time,
-                "status": "failed",
-                "error": str(e)
-            }
+            return {"start_time": start_time, "status": "failed", "error": str(e)}
         finally:
             self.is_running = False
 
-    def _fetch_dw_updates(self) -> Dict[str, Any]:
+    def _fetch_dw_updates(self) -> dict[str, Any]:
         """Fetch updates from data warehouse."""
         logger.debug("Fetching DW updates")
         if not self.config.get("datawarehouse") and not getattr(self, "datawarehouse_config", None):
@@ -115,11 +106,15 @@ class VectorDBRefreshJob:
                 "name": "fetch_dw_updates",
                 "status": "completed",
                 "tables_updated": 0,
-                "records_processed": 0
+                "records_processed": 0,
             }
 
-        pipeline_config = self.config.get("datawarehouse") or getattr(self, "datawarehouse_config", {})
-        pipeline = IngestionPipeline(config=pipeline_config, embedding_service=self.embedding_service)
+        pipeline_config = self.config.get("datawarehouse") or getattr(
+            self, "datawarehouse_config", {}
+        )
+        pipeline = IngestionPipeline(
+            config=pipeline_config, embedding_service=self.embedding_service
+        )
 
         try:
             self.pending_documents = pipeline.run()
@@ -127,7 +122,7 @@ class VectorDBRefreshJob:
                 "name": "fetch_dw_updates",
                 "status": "completed",
                 "tables_updated": len(self.pending_documents),
-                "records_processed": len(self.pending_documents)
+                "records_processed": len(self.pending_documents),
             }
         except Exception as e:
             logger.error(f"Failed to fetch DW updates: {e}")
@@ -137,23 +132,31 @@ class VectorDBRefreshJob:
                 "status": "failed",
                 "tables_updated": 0,
                 "records_processed": 0,
-                "error": str(e)
+                "error": str(e),
             }
 
-    def _parse_etl_and_sql(self) -> Dict[str, Any]:
+    def _parse_etl_and_sql(self) -> dict[str, Any]:
         """Parse ETL definitions and SQL queries."""
         logger.debug("Parsing ETL and SQL")
         # At this stage, the ingestion pipeline already created document-ready metadata.
-        sql_docs = [doc for doc in self.pending_documents if doc.get("metadata", {}).get("asset_type") == "sql"]
-        etl_docs = [doc for doc in self.pending_documents if doc.get("metadata", {}).get("asset_type") == "etl"]
+        sql_docs = [
+            doc
+            for doc in self.pending_documents
+            if doc.get("metadata", {}).get("asset_type") == "sql"
+        ]
+        etl_docs = [
+            doc
+            for doc in self.pending_documents
+            if doc.get("metadata", {}).get("asset_type") == "etl"
+        ]
         return {
             "name": "parse_etl_and_sql",
             "status": "completed",
             "etl_processes_parsed": len(etl_docs),
-            "sql_queries_parsed": len(sql_docs)
+            "sql_queries_parsed": len(sql_docs),
         }
 
-    def _generate_embeddings(self) -> Dict[str, Any]:
+    def _generate_embeddings(self) -> dict[str, Any]:
         """Generate embeddings for new data."""
         logger.debug("Generating embeddings")
         if not self.pending_documents:
@@ -168,31 +171,55 @@ class VectorDBRefreshJob:
         try:
             embs = self.embedding_service.embed_texts(texts)
             self.pending_embeddings = embs
-            return {"name": "generate_embeddings", "status": "completed", "embeddings_generated": len(embs)}
+            return {
+                "name": "generate_embeddings",
+                "status": "completed",
+                "embeddings_generated": len(embs),
+            }
         except Exception as e:
             logger.error(f"Failed to generate embeddings: {e}")
             return {"name": "generate_embeddings", "status": "failed", "embeddings_generated": 0}
 
-    def _update_vector_store(self) -> Dict[str, Any]:
+    def _update_vector_store(self) -> dict[str, Any]:
         """Update vector store with new embeddings."""
         logger.debug("Updating vector store")
         if not self.pending_documents or not self.pending_embeddings:
             logger.debug("No documents or embeddings to update in vector store")
-            return {"name": "update_vector_store", "status": "completed", "documents_added": 0, "documents_updated": 0}
+            return {
+                "name": "update_vector_store",
+                "status": "completed",
+                "documents_added": 0,
+                "documents_updated": 0,
+            }
 
         if not self.vector_store:
             logger.error("No vector store configured for update")
-            return {"name": "update_vector_store", "status": "failed", "documents_added": 0, "documents_updated": 0}
+            return {
+                "name": "update_vector_store",
+                "status": "failed",
+                "documents_added": 0,
+                "documents_updated": 0,
+            }
 
         try:
             # Add documents with embeddings
             self.vector_store.add_documents(self.pending_documents, self.pending_embeddings)
-            return {"name": "update_vector_store", "status": "completed", "documents_added": len(self.pending_documents), "documents_updated": 0}
+            return {
+                "name": "update_vector_store",
+                "status": "completed",
+                "documents_added": len(self.pending_documents),
+                "documents_updated": 0,
+            }
         except Exception as e:
             logger.error(f"Failed to update vector store: {e}")
-            return {"name": "update_vector_store", "status": "failed", "documents_added": 0, "documents_updated": 0}
+            return {
+                "name": "update_vector_store",
+                "status": "failed",
+                "documents_added": 0,
+                "documents_updated": 0,
+            }
 
-    def _update_metadata_store(self) -> Dict[str, Any]:
+    def _update_metadata_store(self) -> dict[str, Any]:
         """Update metadata store with new relationships."""
         logger.debug("Updating metadata store")
         if not self.metadata_store:
@@ -201,7 +228,7 @@ class VectorDBRefreshJob:
                 "name": "update_metadata_store",
                 "status": "completed",
                 "relationships_added": 0,
-                "assets_registered": 0
+                "assets_registered": 0,
             }
 
         relationships_added = 0
@@ -251,10 +278,10 @@ class VectorDBRefreshJob:
             "name": "update_metadata_store",
             "status": "completed",
             "relationships_added": relationships_added,
-            "assets_registered": assets_registered
+            "assets_registered": assets_registered,
         }
 
-    def _recompute_impact_scores(self) -> Dict[str, Any]:
+    def _recompute_impact_scores(self) -> dict[str, Any]:
         """Derive impact scores from upstream/downstream relationship counts."""
         if not self.metadata_store:
             return {

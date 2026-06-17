@@ -3,7 +3,7 @@ Shared lineage resolution for UI, MCP, and RAGEngine.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ def get_asset_lineage(
     metadata_store,
     data_asset: str,
     direction: str = "both",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Resolve upstream/downstream lineage for a catalog asset.
 
@@ -51,8 +51,8 @@ def get_asset_lineage(
         }
 
     asset_meta = metadata_store.get_asset_metadata(asset_id)
-    upstream: List[Any] = []
-    downstream: List[Any] = []
+    upstream: list[Any] = []
+    downstream: list[Any] = []
 
     if dir_norm in ("both", "upstream"):
         upstream = metadata_store.get_upstream_assets(asset_id) or []

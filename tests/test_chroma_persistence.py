@@ -1,10 +1,10 @@
 import gc
 import os
 import shutil
-import tempfile
 import sys
+import tempfile
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.vector_store.vector_db import ChromaVectorStore
 
@@ -25,7 +25,11 @@ def test_chroma_persistence_across_reconnects():
         store1 = ChromaVectorStore(config=cfg)
         store1.connect()
         docs = [
-            {"id": "d1", "text": "Customer table stores customer data", "metadata": {"table": "customer"}},
+            {
+                "id": "d1",
+                "text": "Customer table stores customer data",
+                "metadata": {"table": "customer"},
+            },
         ]
         embeddings = [[0.1, 0.2, 0.3]]
         store1.add_documents(docs, embeddings)

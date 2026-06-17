@@ -3,7 +3,7 @@ Data processor - processes ingested data for vector store.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 from src.data_ingestion.etl_parser import ETLParser
 from src.data_ingestion.sql_parser import SQLParser
@@ -21,8 +21,8 @@ class DataProcessor:
         embedding_service=None,
         default_owner: str = "unknown",
         default_schema: str = "public",
-        sql_parser: Optional[SQLParser] = None,
-        etl_parser: Optional[ETLParser] = None,
+        sql_parser: SQLParser | None = None,
+        etl_parser: ETLParser | None = None,
     ):
         """
         Initialize Data Processor.
@@ -41,7 +41,7 @@ class DataProcessor:
         self.etl_parser = etl_parser or ETLParser(default_schema=default_schema)
         logger.info("Initialized Data Processor")
 
-    def process_table_metadata(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+    def process_table_metadata(self, table_info: dict[str, Any]) -> dict[str, Any]:
         """
         Process table metadata for embedding.
 
@@ -68,8 +68,8 @@ class DataProcessor:
         column_lines = []
         for col in columns:
             column_lines.append(
-                f"{col.get('name')} ({col.get('type')}){' nullable' if col.get('nullable') else ''}" +
-                (f" default={col.get('default')}" if col.get("default") else "")
+                f"{col.get('name')} ({col.get('type')}){' nullable' if col.get('nullable') else ''}"
+                + (f" default={col.get('default')}" if col.get("default") else "")
             )
 
         text_parts = [f"Table {table_namespace}.{table_name}: {description or 'No description'}."]
@@ -100,10 +100,23 @@ class DataProcessor:
                 "primary_keys": primary_keys,
                 "foreign_keys": foreign_keys,
                 "lineage_edges": lineage_edges,
-                **{k: v for k, v in meta.items() if k not in (
-                    "asset_type", "name", "owner", "table_schema", "table_name",
-                    "description", "columns", "primary_keys", "foreign_keys", "lineage_edges",
-                )},
+                **{
+                    k: v
+                    for k, v in meta.items()
+                    if k
+                    not in (
+                        "asset_type",
+                        "name",
+                        "owner",
+                        "table_schema",
+                        "table_name",
+                        "description",
+                        "columns",
+                        "primary_keys",
+                        "foreign_keys",
+                        "lineage_edges",
+                    )
+                },
             },
         }
 
@@ -111,8 +124,8 @@ class DataProcessor:
         self,
         sql: str,
         source: str,
-        parse_result: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        parse_result: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Process SQL content for embedding.
 
@@ -127,7 +140,9 @@ class DataProcessor:
         logger.debug("Processing SQL from: %s", source)
         parsed = parse_result or self.sql_parser.parse_query(sql)
         tables = parsed.get("tables", [])
-        description = parsed.get("transformation_description") or self.sql_parser.generate_description(sql, tables=tables)
+        description = parsed.get(
+            "transformation_description"
+        ) or self.sql_parser.generate_description(sql, tables=tables)
 
         safe_source = source.replace("\\", "/")
         doc_id = f"sql:{safe_source}"
@@ -168,7 +183,7 @@ class DataProcessor:
             },
         }
 
-    def batch_process_sql_files(self, sql_files: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def batch_process_sql_files(self, sql_files: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Process SQL file payloads into embedding documents."""
         results = []
         for item in sql_files:
@@ -186,9 +201,9 @@ class DataProcessor:
 
     def process_etl_definition(
         self,
-        etl_config: Dict[str, Any],
-        source: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        etl_config: dict[str, Any],
+        source: str | None = None,
+    ) -> dict[str, Any]:
         """
         Process ETL definition for embedding.
 
@@ -213,7 +228,9 @@ class DataProcessor:
             f"ETL asset {name} ({safe_source}): {description}",
         ]
         if etl_config.get("dependencies"):
-            text_parts.append(f"Dependencies: {', '.join(str(d) for d in etl_config['dependencies'])}.")
+            text_parts.append(
+                f"Dependencies: {', '.join(str(d) for d in etl_config['dependencies'])}."
+            )
 
         return {
             "id": doc_id,
@@ -233,7 +250,7 @@ class DataProcessor:
             },
         }
 
-    def batch_process_etl_configs(self, etl_configs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def batch_process_etl_configs(self, etl_configs: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Process parsed ETL job definitions into embedding documents."""
         results = []
         for item in etl_configs:
@@ -248,7 +265,7 @@ class DataProcessor:
                 logger.error("Failed to process ETL %s: %s", item.get("source"), e)
         return results
 
-    def batch_process_tables(self, table_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def batch_process_tables(self, table_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Batch process multiple tables.
 

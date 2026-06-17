@@ -3,8 +3,8 @@ Datawarehouse connector - connects to DW and extracts metadata.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from abc import ABC, abstractmethod
+from typing import Any
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -21,22 +21,22 @@ class DataWarehouseConnector(ABC):
         pass
 
     @abstractmethod
-    def get_tables(self) -> List[str]:
+    def get_tables(self) -> list[str]:
         """Get list of all tables."""
         pass
 
     @abstractmethod
-    def get_table_schema(self, table_name: str) -> Dict[str, Any]:
+    def get_table_schema(self, table_name: str) -> dict[str, Any]:
         """Get schema for a table."""
         pass
 
     @abstractmethod
-    def get_table_description(self, table_name: str) -> Optional[str]:
+    def get_table_description(self, table_name: str) -> str | None:
         """Get description/comments for a table."""
         pass
 
     @abstractmethod
-    def execute_query(self, query: str) -> List[Dict[str, Any]]:
+    def execute_query(self, query: str) -> list[dict[str, Any]]:
         """Execute a query against the DW."""
         pass
 
@@ -44,7 +44,7 @@ class DataWarehouseConnector(ABC):
 class PostgreSQLConnector(DataWarehouseConnector):
     """PostgreSQL data warehouse connector."""
 
-    def __init__(self, config: Dict[str, Any], ingest: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any], ingest: dict[str, Any] | None = None):
         """
         Initialize PostgreSQL connector.
 
@@ -102,7 +102,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
         if not self.connection:
             self.connect()
 
-    def get_tables(self) -> List[str]:
+    def get_tables(self) -> list[str]:
         """Get tables from PostgreSQL, honoring ingest.schemas and ingest.exclude_tables."""
         logger.debug("Fetching tables from PostgreSQL")
         self._ensure_connection()
@@ -116,7 +116,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
             WHERE table_type = 'BASE TABLE'
               AND table_schema NOT IN ('pg_catalog', 'information_schema')
         """
-        params: List[Any] = []
+        params: list[Any] = []
         if schemas:
             query += " AND table_schema = ANY(%s)"
             params.append(list(schemas))
@@ -132,10 +132,10 @@ class PostgreSQLConnector(DataWarehouseConnector):
         logger.debug("Found %s tables after ingest filters", len(tables))
         return tables
 
-    def _ingest_schemas(self) -> List[str]:
+    def _ingest_schemas(self) -> list[str]:
         return list(self.ingest.get("schemas") or [])
 
-    def fetch_tables_metadata(self) -> List[Dict[str, Any]]:
+    def fetch_tables_metadata(self) -> list[dict[str, Any]]:
         """
         Batch-fetch columns, descriptions, primary keys, and foreign keys for all
         tables returned by get_tables() (few queries instead of per-table N+1).
@@ -150,10 +150,10 @@ class PostgreSQLConnector(DataWarehouseConnector):
             schemas = sorted({name.split(".", 1)[0] for name in tables if "." in name})
 
         schema_set = set(schemas)
-        columns_by_table: Dict[str, List[Dict[str, Any]]] = {}
-        descriptions: Dict[str, str] = {}
-        primary_keys: Dict[str, List[str]] = {}
-        foreign_keys: Dict[str, List[Dict[str, Any]]] = {}
+        columns_by_table: dict[str, list[dict[str, Any]]] = {}
+        descriptions: dict[str, str] = {}
+        primary_keys: dict[str, list[str]] = {}
+        foreign_keys: dict[str, list[dict[str, Any]]] = {}
 
         col_query = """
             SELECT table_schema, table_name, column_name, data_type,
@@ -161,7 +161,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
             FROM information_schema.columns
             WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
         """
-        col_params: List[Any] = []
+        col_params: list[Any] = []
         if schemas:
             col_query += " AND table_schema = ANY(%s)"
             col_params.append(schemas)
@@ -189,7 +189,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
             JOIN pg_namespace n ON n.oid = c.relnamespace
             WHERE c.relkind = 'r'
         """
-        desc_params: List[Any] = []
+        desc_params: list[Any] = []
         if schemas:
             desc_query += " AND n.nspname = ANY(%s)"
             desc_params.append(schemas)
@@ -210,7 +210,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
              AND tc.table_name = kcu.table_name
             WHERE tc.constraint_type = 'PRIMARY KEY'
         """
-        pk_params: List[Any] = []
+        pk_params: list[Any] = []
         if schemas:
             pk_query += " AND tc.table_schema = ANY(%s)"
             pk_params.append(schemas)
@@ -241,7 +241,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
              AND ccu.table_schema = tc.table_schema
             WHERE tc.constraint_type = 'FOREIGN KEY'
         """
-        fk_params: List[Any] = []
+        fk_params: list[Any] = []
         if schemas:
             fk_query += " AND tc.table_schema = ANY(%s)"
             fk_params.append(schemas)
@@ -265,7 +265,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
                 )
 
         default_owner = self.ingest.get("default_owner", "unknown")
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
 
         for table_name in tables:
             if "." in table_name:
@@ -315,7 +315,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
         logger.info("Batch-fetched metadata for %s tables", len(results))
         return results
 
-    def get_table_schema(self, table_name: str) -> Dict[str, Any]:
+    def get_table_schema(self, table_name: str) -> dict[str, Any]:
         """Get table schema from PostgreSQL."""
         logger.debug(f"Fetching schema for table: {table_name}")
         self._ensure_connection()
@@ -351,7 +351,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
             ],
         }
 
-    def get_table_description(self, table_name: str) -> Optional[str]:
+    def get_table_description(self, table_name: str) -> str | None:
         """Get table description from PostgreSQL."""
         logger.debug(f"Fetching description for table: {table_name}")
         self._ensure_connection()
@@ -375,7 +375,7 @@ class PostgreSQLConnector(DataWarehouseConnector):
 
         return row["description"] if row else None
 
-    def execute_query(self, query: str) -> List[Dict[str, Any]]:
+    def execute_query(self, query: str) -> list[dict[str, Any]]:
         """Execute query on PostgreSQL."""
         logger.debug(f"Executing query: {query[:50]}...")
         self._ensure_connection()

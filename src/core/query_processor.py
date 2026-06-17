@@ -3,7 +3,7 @@ Query processor - converts natural language to SQL queries with RAG catalog cont
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class QueryProcessor:
         logger.info("Query Processor initialized")
 
     @staticmethod
-    def normalize_llm_result(result: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize_llm_result(result: dict[str, Any]) -> dict[str, Any]:
         """Map RAGEngine.generate_query keys to MCP tool response shape."""
         sql = result.get("sql") or result.get("query") or ""
         return {
@@ -40,7 +40,7 @@ class QueryProcessor:
             "tables_used": result.get("tables_used", []),
         }
 
-    def build_catalog_context(self, natural_language: str) -> Tuple[str, List[str]]:
+    def build_catalog_context(self, natural_language: str) -> tuple[str, list[str]]:
         """
         Retrieve relevant catalog snippets for the user question.
 
@@ -55,8 +55,8 @@ class QueryProcessor:
             logger.info("No catalog hits for query — generating SQL without RAG context")
             return "", []
 
-        blocks: List[str] = []
-        tables_used: List[str] = []
+        blocks: list[str] = []
+        tables_used: list[str] = []
         total_len = 0
 
         for i, hit in enumerate(hits, 1):
@@ -87,7 +87,7 @@ class QueryProcessor:
         )
         return context, unique_tables
 
-    def process(self, natural_language: str) -> Dict[str, Any]:
+    def process(self, natural_language: str) -> dict[str, Any]:
         """
         Convert natural language to SQL query with RAG-augmented prompt.
 
@@ -130,7 +130,7 @@ class QueryProcessor:
         except Exception:
             return bool(sql and sql.strip())
 
-    def get_table_metadata(self, table_name: str) -> Dict[str, Any]:
+    def get_table_metadata(self, table_name: str) -> dict[str, Any]:
         """Get metadata for a table from the metadata store."""
         logger.debug("Getting metadata for table: %s", table_name)
         if self.rag_engine and self.rag_engine.metadata_store:

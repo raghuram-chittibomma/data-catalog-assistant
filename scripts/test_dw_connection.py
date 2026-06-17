@@ -5,31 +5,27 @@ Loads configuration from config.yaml and tests connectivity.
 
 Usage:
     python scripts/test_dw_connection.py
-    
+
     Or with specific config file:
     python scripts/test_dw_connection.py --config config/config.yaml
 """
 
-import sys
-import os
-import logging
-from pathlib import Path
-from typing import Dict, Any, Tuple
 import argparse
+import logging
+import os
+import sys
+from pathlib import Path
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import psycopg2
-from src.utils.config_loader import load_config
-from psycopg2 import sql, OperationalError, ProgrammingError
+from psycopg2 import OperationalError, ProgrammingError
 
+from src.utils.config_loader import load_config
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -78,23 +74,23 @@ class PostgreSQLConnectionTester:
         """
         try:
             self.dw_config = self.config.get("datawarehouse", {})
-            
+
             if not self.dw_config:
                 logger.error("✗ No 'datawarehouse' section in config")
                 return False
-            
+
             dw_type = self.dw_config.get("type", "").lower()
             if dw_type != "postgresql":
                 logger.error(f"✗ Expected 'postgresql', got '{dw_type}'")
                 return False
-            
+
             logger.info(f"✓ Data warehouse type: {dw_type}")
             return True
         except Exception as e:
             logger.error(f"✗ Error extracting DW config: {e}")
             return False
 
-    def resolve_credentials(self) -> Tuple[Dict[str, str], Tuple[str, str]]:
+    def resolve_credentials(self) -> tuple[dict[str, str], tuple[str, str]]:
         """
         Resolve database credentials from config and environment variables.
 
@@ -102,14 +98,14 @@ class PostgreSQLConnectionTester:
             Tuple of (connection_params dict, (username, password) tuple)
         """
         conn_config = self.dw_config.get("connection", {})
-        
+
         # Extract values and resolve environment variables
         host = conn_config.get("host", "localhost")
         port = conn_config.get("port", 5432)
         database = conn_config.get("database", "")
         user = conn_config.get("user", "")
         password = conn_config.get("password", "")
-        
+
         # Support unresolved placeholders if config was loaded without .env
         if isinstance(user, str) and user.startswith("${") and user.endswith("}"):
             var_name = user[2:-1]
@@ -128,9 +124,9 @@ class PostgreSQLConnectionTester:
             "port": port,
             "database": database,
             "user": user,
-            "password": password
+            "password": password,
         }
-        
+
         return connection_params, (user, password)
 
     def test_connection(self) -> bool:
@@ -141,33 +137,33 @@ class PostgreSQLConnectionTester:
             True if connection successful, False otherwise
         """
         conn_params, (user, password) = self.resolve_credentials()
-        
+
         logger.info("\nConnection Parameters:")
         logger.info(f"  Host: {conn_params['host']}")
         logger.info(f"  Port: {conn_params['port']}")
         logger.info(f"  Database: {conn_params['database']}")
         logger.info(f"  User: {conn_params['user'] if conn_params['user'] else '(not set)'}")
         logger.info(f"  Password: {'*' * 4 if password else '(not set)'}")
-        
+
         # Validate credentials
-        if not conn_params['user'] or not password:
+        if not conn_params["user"] or not password:
             logger.error("✗ Database credentials not configured")
             logger.error("  Please set DW_USER and DW_PASSWORD environment variables")
             return False
-        
+
         try:
             logger.info("\nAttempting connection...")
             self.connection = psycopg2.connect(
-                host=conn_params['host'],
-                port=conn_params['port'],
-                database=conn_params['database'],
-                user=conn_params['user'],
+                host=conn_params["host"],
+                port=conn_params["port"],
+                database=conn_params["database"],
+                user=conn_params["user"],
                 password=password,
-                connect_timeout=5
+                connect_timeout=5,
             )
             logger.info("✓ Connection successful!")
             return True
-        
+
         except OperationalError as e:
             logger.error(f"✗ Connection failed: {e}")
             return False
@@ -185,25 +181,25 @@ class PostgreSQLConnectionTester:
         if not self.connection:
             logger.error("✗ No active connection")
             return False
-        
+
         try:
             cursor = self.connection.cursor()
-            
+
             # Get database version
             cursor.execute("SELECT version();")
             version = cursor.fetchone()[0]
             logger.info(f"\n✓ PostgreSQL Version: {version.split(',')[0]}")
-            
+
             # Get current database
             cursor.execute("SELECT current_database();")
             current_db = cursor.fetchone()[0]
             logger.info(f"✓ Current Database: {current_db}")
-            
+
             # Get current user
             cursor.execute("SELECT current_user;")
             current_user = cursor.fetchone()[0]
             logger.info(f"✓ Current User: {current_user}")
-            
+
             # Get table count
             cursor.execute("""
                 SELECT COUNT(*) 
@@ -212,7 +208,7 @@ class PostgreSQLConnectionTester:
             """)
             table_count = cursor.fetchone()[0]
             logger.info(f"✓ Tables in public schema: {table_count}")
-            
+
             # List first 5 tables
             if table_count > 0:
                 cursor.execute("""
@@ -223,10 +219,10 @@ class PostgreSQLConnectionTester:
                 """)
                 tables = [row[0] for row in cursor.fetchall()]
                 logger.info(f"  Sample tables: {', '.join(tables)}")
-            
+
             cursor.close()
             return True
-        
+
         except ProgrammingError as e:
             logger.error(f"✗ Database query error: {e}")
             return False
@@ -243,10 +239,10 @@ class PostgreSQLConnectionTester:
         """
         if not self.connection:
             return False
-        
+
         try:
             cursor = self.connection.cursor()
-            
+
             # Get schemas
             cursor.execute("""
                 SELECT schema_name 
@@ -255,15 +251,15 @@ class PostgreSQLConnectionTester:
                 LIMIT 10
             """)
             schemas = [row[0] for row in cursor.fetchall()]
-            
+
             if schemas:
                 logger.info(f"\n✓ Available schemas: {', '.join(schemas)}")
             else:
                 logger.info("\n⚠ No custom schemas found")
-            
+
             cursor.close()
             return True
-        
+
         except Exception as e:
             logger.error(f"⚠ Could not retrieve schemas: {e}")
             return True  # Not critical
@@ -287,23 +283,23 @@ class PostgreSQLConnectionTester:
 
         if not skip_config_load and not self.load_config():
             return False
-        
+
         # Step 2: Extract DW config
         if not self.extract_dw_config():
             return False
-        
+
         # Step 3: Test connection
         if not self.test_connection():
             return False
-        
+
         # Step 4: Test database access
         if not self.test_database_access():
             self.close()
             return False
-        
+
         # Step 5: Test schema access
         self.test_schema_access()
-        
+
         self.close()
         return True
 
@@ -311,10 +307,10 @@ class PostgreSQLConnectionTester:
 def find_file(filename: str = ".env") -> str:
     """
     Find file in multiple locations.
-    
+
     Args:
         filename: Filename or relative path to find (e.g., ".env", "config/config.yaml")
-        
+
     Returns:
         Path to file if found, otherwise the original filename
     """
@@ -325,39 +321,29 @@ def find_file(filename: str = ".env") -> str:
         Path.cwd() / filename,  # Working directory
         Path.cwd() / "data-catalog-assistant" / filename,
     ]
-    
+
     for path in possible_paths:
         if path.exists():
             logger.debug(f"Found {filename} at: {path}")
             return str(path)
-    
+
     logger.debug(f"Could not find {filename} in standard locations")
     return filename
 
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Test PostgreSQL Data Warehouse Connection"
-    )
-    parser.add_argument(
-        "--config",
-        default=None,
-        help="Path to config.yaml (default: auto-detect)"
-    )
-    parser.add_argument(
-        "--env",
-        default=None,
-        help="Path to .env file (default: auto-detect)"
-    )
+    parser = argparse.ArgumentParser(description="Test PostgreSQL Data Warehouse Connection")
+    parser.add_argument("--config", default=None, help="Path to config.yaml (default: auto-detect)")
+    parser.add_argument("--env", default=None, help="Path to .env file (default: auto-detect)")
     args = parser.parse_args()
-    
+
     # Find config file if not specified
     if args.config:
         config_path = args.config
     else:
         config_path = find_file("config/config.yaml")
-    
+
     if args.env:
         env_path = args.env
     else:
@@ -373,7 +359,7 @@ def main():
     if not tester.load_config(env_path=env_path):
         return 1
     success = tester.run_all_tests(skip_config_load=True)
-    
+
     logger.info("=" * 60)
     if success:
         logger.info("✓ All tests passed!")

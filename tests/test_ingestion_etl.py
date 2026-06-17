@@ -5,8 +5,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.data_ingestion.ingestion_pipeline import IngestionPipeline
 from src.data_ingestion.data_processor import DataProcessor
+from src.data_ingestion.ingestion_pipeline import IngestionPipeline
 
 
 class DummyConnector:

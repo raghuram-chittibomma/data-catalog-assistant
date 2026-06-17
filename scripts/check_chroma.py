@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Quick Chroma diagnostic — document count and sample search."""
+
 import os
 import sys
 from pathlib import Path

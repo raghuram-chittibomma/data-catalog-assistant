@@ -1,6 +1,9 @@
-# MCP API demo (Phase 2)
+# REST API & MCP server demo
 
-Data Catalog Assistant exposes a FastAPI MCP-style server on **http://localhost:3000** (configurable).
+Data Catalog Assistant exposes the same tools two ways:
+
+1. A **REST API** (FastAPI) on **http://localhost:3000** — convenient for curl/scripts (this doc).
+2. A protocol-compliant **MCP server** over stdio for agents — see [Run as an MCP server](#run-as-an-mcp-server) below.
 
 ## Prerequisites
 
@@ -15,7 +18,7 @@ python src\main.py
 Leave `main.py` running (Ctrl+C to stop).
 
 - **Gradio UI:** http://127.0.0.1:7860 (catalog search, lineage, generate SQL)
-- **MCP API:** http://localhost:3000 (scripts/curl)
+- **REST API:** http://localhost:3000 (scripts/curl)
 
 ## Endpoints
 
@@ -101,7 +104,33 @@ $r = Invoke-RestMethod -Method POST -Uri "http://localhost:3000/tools/generate_q
 $r | Format-List *
 ```
 
-## Smoke script (server must be running)
+## Run as an MCP server
+
+The REST API above is great for curl, but agents speak the Model Context Protocol.
+The same tools are served over stdio via the official `mcp` SDK:
+
+```powershell
+python -m src.mcp_server.mcp_app
+```
+
+Register it with an MCP client (e.g. Claude Desktop `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "data-catalog-assistant": {
+      "command": "python",
+      "args": ["-m", "src.mcp_server.mcp_app"],
+      "cwd": "C:/Users/raghu/AI-Projects/data-catalog-assistant",
+      "env": { "OPENAI_API_KEY": "sk-..." }
+    }
+  }
+}
+```
+
+The client can then list/call the 13 tools and read the `catalog://` resources directly.
+
+## Smoke script (REST server must be running)
 
 ```powershell
 python scripts\mcp_smoke.py

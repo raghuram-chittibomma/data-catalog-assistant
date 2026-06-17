@@ -179,4 +179,4 @@ POC demo path is **complete**. Pick next work by audience:
 | `bdw_rag_metadata` | Catalog + lineage (Postgres) |
 | `sql_samples/`, `etl_samples/` | File-based lineage sources |
 
-See also: [WORKING_COPY.md](../WORKING_COPY.md) for setup commands.
+See also: [SETUP_GUIDE.md](SETUP_GUIDE.md) for setup and run commands.

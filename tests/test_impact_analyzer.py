@@ -16,10 +16,15 @@ def _store_with_downstream():
         "asset_id": "public.orders",
         "asset_type": "table",
     }
-    store.get_upstream_assets.return_value = [{"asset_id": "public.customers", "asset_type": "table"}]
+    store.get_upstream_assets.return_value = [
+        {"asset_id": "public.customers", "asset_type": "table"}
+    ]
     store.get_downstream_assets.return_value = [
         {"asset_id": "sql:sql_samples/orders_by_customer.sql", "asset_type": "sql"},
-        {"asset_id": "etl:etl_samples/load_orders_summary.yaml#load_orders_summary", "asset_type": "etl"},
+        {
+            "asset_id": "etl:etl_samples/load_orders_summary.yaml#load_orders_summary",
+            "asset_type": "etl",
+        },
     ]
     return store
 

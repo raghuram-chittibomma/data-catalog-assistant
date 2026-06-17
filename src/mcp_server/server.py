@@ -1,13 +1,19 @@
 """
-MCP Server - Model Context Protocol server for exposing tools.
+REST tool API for the Data Catalog Assistant.
+
+This is a FastAPI/HTTP wrapper that exposes the catalog/query/impact tools over
+simple REST endpoints (handy for demos, curl, and the Gradio UI). It is *not*
+the Model Context Protocol — for a protocol-compliant MCP server (stdio, usable
+by Claude Desktop / Cursor) see ``src/mcp_server/mcp_app.py``. Both wrap the same
+underlying handlers.
 """
 
 import logging
 from threading import Thread
-from typing import Dict, List, Any
+from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger(__name__)
@@ -15,11 +21,14 @@ logger = logging.getLogger(__name__)
 
 class MCPServer:
     """
-    MCP (Model Context Protocol) server.
-    Exposes RAG tools that can be used by Claude and other agents.
+    REST tool API server.
+
+    Exposes the catalog/query/impact tools over HTTP. Named ``MCPServer`` for
+    historical reasons; the protocol-compliant MCP server lives in
+    ``src/mcp_server/mcp_app.py``.
     """
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         """
         Initialize MCP server.
 
@@ -29,7 +38,7 @@ class MCPServer:
         self.config = config or {}
         self.tools = {}
         self.resources = {}
-        self.app = FastAPI(title="Data Catalog Assistant MCP Server")
+        self.app = FastAPI(title="Data Catalog Assistant REST Tool API")
         self._server = None
         self._thread = None
 
@@ -49,22 +58,24 @@ class MCPServer:
         self.app.add_api_route("/tools", self._list_tools, methods=["GET"])
         self.app.add_api_route("/tools/{tool_name}", self._execute_tool, methods=["POST"])
         self.app.add_api_route("/resources", self._list_resources, methods=["GET"])
-        self.app.add_api_route("/resources/{resource_name}", self._execute_resource, methods=["POST"])
+        self.app.add_api_route(
+            "/resources/{resource_name}", self._execute_resource, methods=["POST"]
+        )
 
-    async def _root(self) -> Dict[str, Any]:
+    async def _root(self) -> dict[str, Any]:
         return {
             "status": "ok",
             "tools": self.get_tool_list(),
-            "resources": self.get_resource_list()
+            "resources": self.get_resource_list(),
         }
 
-    async def _list_tools(self) -> Dict[str, Any]:
+    async def _list_tools(self) -> dict[str, Any]:
         return {"tools": self.get_tool_list()}
 
-    async def _list_resources(self) -> Dict[str, Any]:
+    async def _list_resources(self) -> dict[str, Any]:
         return {"resources": self.get_resource_list()}
 
-    async def _execute_tool(self, tool_name: str, payload: Dict[str, Any] = Body(default={})):
+    async def _execute_tool(self, tool_name: str, payload: dict[str, Any] = Body(default={})):
         tool = self.tools.get(tool_name)
         if not tool:
             raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
@@ -74,11 +85,13 @@ class MCPServer:
             result = handler(**payload) if isinstance(payload, dict) else handler(payload)
             return result
         except TypeError as te:
-            raise HTTPException(status_code=400, detail=str(te))
+            raise HTTPException(status_code=400, detail=str(te)) from te
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
-    async def _execute_resource(self, resource_name: str, payload: Dict[str, Any] = Body(default={})):
+    async def _execute_resource(
+        self, resource_name: str, payload: dict[str, Any] = Body(default={})
+    ):
         resource = self.resources.get(resource_name)
         if not resource:
             raise HTTPException(status_code=404, detail=f"Resource '{resource_name}' not found")
@@ -88,11 +101,11 @@ class MCPServer:
             result = handler(**payload) if isinstance(payload, dict) else handler(payload)
             return result
         except TypeError as te:
-            raise HTTPException(status_code=400, detail=str(te))
+            raise HTTPException(status_code=400, detail=str(te)) from te
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
-    def register_tool(self, name: str, handler, description: str, parameters: Dict):
+    def register_tool(self, name: str, handler, description: str, parameters: dict):
         """
         Register a tool with the server.
 
@@ -106,7 +119,7 @@ class MCPServer:
         self.tools[name] = {
             "handler": handler,
             "description": description,
-            "parameters": parameters
+            "parameters": parameters,
         }
 
     def register_resource(self, name: str, handler, description: str):
@@ -119,10 +132,7 @@ class MCPServer:
             description: Resource description
         """
         logger.debug(f"Registering resource: {name}")
-        self.resources[name] = {
-            "handler": handler,
-            "description": description
-        }
+        self.resources[name] = {"handler": handler, "description": description}
 
     def start(self, host: str = "localhost", port: int = 3000):
         """
@@ -146,23 +156,16 @@ class MCPServer:
         if self._thread:
             self._thread.join(timeout=5)
 
-    def get_tool_list(self) -> List[Dict[str, Any]]:
+    def get_tool_list(self) -> list[dict[str, Any]]:
         """Get list of available tools."""
         return [
-            {
-                "name": name,
-                "description": tool["description"],
-                "parameters": tool["parameters"]
-            }
+            {"name": name, "description": tool["description"], "parameters": tool["parameters"]}
             for name, tool in self.tools.items()
         ]
 
-    def get_resource_list(self) -> List[Dict[str, Any]]:
+    def get_resource_list(self) -> list[dict[str, Any]]:
         """Get list of available resources."""
         return [
-            {
-                "name": name,
-                "description": resource["description"]
-            }
+            {"name": name, "description": resource["description"]}
             for name, resource in self.resources.items()
         ]

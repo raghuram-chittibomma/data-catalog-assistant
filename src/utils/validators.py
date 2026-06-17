@@ -4,7 +4,6 @@ Validators - for validating inputs and SQL queries.
 
 import logging
 import re
-from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,7 @@ class Validator:
     """
 
     @staticmethod
-    def validate_table_name(table_name: str) -> Tuple[bool, str]:
+    def validate_table_name(table_name: str) -> tuple[bool, str]:
         """
         Validate table name.
 
@@ -29,12 +28,12 @@ class Validator:
             return False, "Table name is empty"
         if len(table_name) > 128:
             return False, "Table name is too long"
-        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table_name):
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", table_name):
             return False, "Table name contains invalid characters"
         return True, ""
 
     @staticmethod
-    def validate_column_name(column_name: str) -> Tuple[bool, str]:
+    def validate_column_name(column_name: str) -> tuple[bool, str]:
         """
         Validate column name.
 
@@ -48,12 +47,12 @@ class Validator:
             return False, "Column name is empty"
         if len(column_name) > 128:
             return False, "Column name is too long"
-        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', column_name):
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", column_name):
             return False, "Column name contains invalid characters"
         return True, ""
 
     @staticmethod
-    def validate_sql_query(sql: str) -> Tuple[bool, str]:
+    def validate_sql_query(sql: str) -> tuple[bool, str]:
         """
         Basic SQL validation.
 
@@ -65,22 +64,22 @@ class Validator:
         """
         if not sql or len(sql) == 0:
             return False, "SQL query is empty"
-        
+
         # Check for dangerous operations
-        dangerous_keywords = ['DROP', 'DELETE', 'TRUNCATE', 'ALTER']
+        dangerous_keywords = ["DROP", "DELETE", "TRUNCATE", "ALTER"]
         sql_upper = sql.upper()
         for keyword in dangerous_keywords:
             if keyword in sql_upper:
                 return False, f"Query contains dangerous keyword: {keyword}"
-        
+
         # Check for basic SQL syntax
-        if 'SELECT' not in sql_upper:
+        if "SELECT" not in sql_upper:
             return False, "Query must contain SELECT statement"
-        
+
         return True, ""
 
     @staticmethod
-    def validate_email(email: str) -> Tuple[bool, str]:
+    def validate_email(email: str) -> tuple[bool, str]:
         """
         Validate email address.
 
@@ -90,7 +89,7 @@ class Validator:
         Returns:
             (is_valid, error_message)
         """
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if re.match(pattern, email):
             return True, ""
         return False, "Invalid email address"

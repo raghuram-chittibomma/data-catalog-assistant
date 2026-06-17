@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Preflight checks before batch_jobs/run_refresh_job.py."""
+
 import os
 import sys
 from pathlib import Path

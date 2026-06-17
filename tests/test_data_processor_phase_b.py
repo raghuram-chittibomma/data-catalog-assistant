@@ -38,7 +38,9 @@ def test_process_table_metadata_includes_foreign_keys_in_text():
         "schema": {
             "table_schema": "public",
             "table_name": "orders",
-            "columns": [{"name": "customer_id", "type": "integer", "nullable": False, "default": None}],
+            "columns": [
+                {"name": "customer_id", "type": "integer", "nullable": False, "default": None}
+            ],
             "primary_keys": ["order_id"],
             "foreign_keys": [
                 {

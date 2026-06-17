@@ -5,7 +5,7 @@ Load config.yaml with .env and ${VAR} placeholder substitution.
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import yaml
 
@@ -17,7 +17,7 @@ def project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def resolve_path(path: Union[str, Path], root: Optional[Path] = None) -> Path:
+def resolve_path(path: str | Path, root: Path | None = None) -> Path:
     """Resolve a path relative to cwd or project root."""
     p = Path(path)
     if p.is_absolute() and p.exists():
@@ -47,7 +47,7 @@ def load_dotenv_file(env_path: Path) -> None:
             os.environ[key] = val
 
 
-def resolve_env_placeholders(text: str, environ: Optional[Dict[str, str]] = None) -> str:
+def resolve_env_placeholders(text: str, environ: dict[str, str] | None = None) -> str:
     """Replace ${VAR_NAME} with values from environ (default: os.environ)."""
     env = environ if environ is not None else os.environ
 
@@ -58,10 +58,10 @@ def resolve_env_placeholders(text: str, environ: Optional[Dict[str, str]] = None
 
 
 def load_config(
-    config_path: Optional[Union[str, Path]] = None,
-    env_path: Optional[Union[str, Path]] = None,
+    config_path: str | Path | None = None,
+    env_path: str | Path | None = None,
     load_env: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Load application configuration.
 

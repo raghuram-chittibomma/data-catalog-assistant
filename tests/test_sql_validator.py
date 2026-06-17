@@ -16,14 +16,14 @@ def test_validate_blocked_keyword():
 
 
 def test_validate_allowed_tables():
-    sql = 'SELECT * FROM sales.orders o JOIN customers c ON o.customer_id = c.id'
-    ok, reason = validate_sql(sql, allowed_tables=["customers", "orders"]) 
+    sql = "SELECT * FROM sales.orders o JOIN customers c ON o.customer_id = c.id"
+    ok, reason = validate_sql(sql, allowed_tables=["customers", "orders"])
     assert ok
 
 
 def test_validate_disallowed_table():
-    sql = 'SELECT * FROM admin.secret'
-    ok, reason = validate_sql(sql, allowed_tables=["public_table"]) 
+    sql = "SELECT * FROM admin.secret"
+    ok, reason = validate_sql(sql, allowed_tables=["public_table"])
     assert not ok
     assert "disallowed" in reason.lower() or "references" in reason.lower()
 

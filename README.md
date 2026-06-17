@@ -14,7 +14,7 @@ Teams lose time finding tables and SQL, tracing lineage manually, and estimating
 
 ## Solution
 
-Ingest warehouse schema plus SQL/ETL samples into **Chroma** (search) and **Postgres metadata** (lineage/impact). Expose the same capabilities through **Gradio** (http://127.0.0.1:7860) and **FastAPI MCP-style tools** (http://localhost:3000). Use **OpenAI only for Generate SQL**, with RAG context from the catalog.
+Ingest warehouse schema plus SQL/ETL samples into **Chroma** (search) and **Postgres metadata** (lineage/impact). Expose the same capabilities through three interfaces that share one set of tool handlers: a **Gradio UI** (http://127.0.0.1:7860), a **REST API** (FastAPI, http://localhost:3000), and a protocol-compliant **MCP server** (stdio, via the official `mcp` SDK) for agents like Claude Desktop / Cursor. Use **OpenAI only for Generate SQL**, with RAG context from the catalog.
 
 ## Screenshots
 
@@ -41,9 +41,11 @@ flowchart TB
     Chroma[(ChromaDB)]
     Meta[(Postgres metadata)]
   end
-  subgraph runtime [Runtime - main.py]
+  subgraph runtime [Runtime]
     RAG[RAG Engine]
-    Tools[MCP tools - FastAPI]
+    Handlers[Tool handlers - query/search/impact]
+    REST[REST API - FastAPI]
+    MCP[MCP server - stdio]
     UI[Gradio UI]
   end
   DW --> Job
@@ -51,10 +53,11 @@ flowchart TB
   Job --> Chroma
   Job --> Meta
   Chroma --> RAG
-  Meta --> Tools
-  Meta --> UI
-  RAG --> Tools
-  RAG --> UI
+  Meta --> Handlers
+  RAG --> Handlers
+  Handlers --> REST
+  Handlers --> MCP
+  Handlers --> UI
 ```
 
 | Component | Path |
@@ -62,7 +65,7 @@ flowchart TB
 | Ingestion | `src/data_ingestion/` |
 | Vector + metadata | `src/vector_store/` |
 | RAG / impact | `src/core/` |
-| MCP API | `src/mcp_server/` |
+| REST API + MCP server | `src/mcp_server/` (`server.py` REST, `mcp_app.py` MCP) |
 | UI | `src/ui/` |
 | Refresh | `batch_jobs/run_refresh_job.py` |
 
@@ -77,9 +80,10 @@ flowchart TB
 | Catalog / lineage | PostgreSQL database `bdw_rag_metadata` |
 | Vectors | ChromaDB, `sentence-transformers` (`all-MiniLM-L6-v2`) |
 | LLM | OpenAI (GPT-4) — NL→SQL only |
-| API | FastAPI, Uvicorn |
+| REST API | FastAPI, Uvicorn |
+| MCP | Official `mcp` Python SDK (stdio) |
 | UI | Gradio 4.x |
-| Tests | pytest (~95 tests) |
+| Tests | pytest (~105 tests), ruff lint + coverage gate in CI |
 
 ---
 
@@ -87,7 +91,7 @@ flowchart TB
 
 - **Embeddings for search, graph for lineage** — Similarity in Chroma; upstream/downstream and impact scores in Postgres.
 - **LLM only where needed** — Generate SQL uses RAG + OpenAI; impact and lineage stay deterministic for demos.
-- **Shared services** — `lineage_service`, `ImpactTools` used by MCP and Gradio.
+- **One tool layer, three interfaces** — the same query/search/impact handlers back the Gradio UI, the REST API, and the MCP server, so behavior never drifts between them.
 - **Change text drives target table** — Assess change impact parses `on public.customers` even if Asset id still says `public.orders`.
 - **SQL validation** — Rule-based checks on generated SQL before display.
 
@@ -126,13 +130,20 @@ Expect ~16 vector documents and lineage relationships in metadata (varies with s
 ### Run application
 
 ```powershell
+# Gradio UI + REST API
 python src\main.py
+
+# Protocol-compliant MCP server (stdio) for agents
+python -m src.mcp_server.mcp_app
 ```
 
-| Service | URL |
-|---------|-----|
-| Gradio UI | http://127.0.0.1:7860 |
-| MCP HTTP API | http://localhost:3000 |
+| Interface | Endpoint | Use |
+|-----------|----------|-----|
+| Gradio UI | http://127.0.0.1:7860 | Interactive demo |
+| REST API | http://localhost:3000 | HTTP / curl / scripts |
+| MCP server | stdio (`python -m src.mcp_server.mcp_app`) | Claude Desktop, Cursor, other MCP clients |
+
+See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for an example MCP client config.
 
 **Note:** Overnight scheduler is **off** by default (`schedule_on_startup: false`). Refresh the catalog with `run_refresh_job.py` (or cron), not via a background loop in `main.py`.
 
@@ -154,9 +165,11 @@ python src\main.py
 ```powershell
 pytest tests/ -q
 pytest tests/ --cov=src
+ruff check .          # lint
+ruff format --check . # formatting
 ```
 
-CI runs the same suite on push (see `.github/workflows/ci.yml`). Badge links to [github.com/raghuram-chittibomma/data-catalog-assistant](https://github.com/raghuram-chittibomma/data-catalog-assistant).
+CI runs **two jobs** on push (see `.github/workflows/ci.yml`): a `lint` job (`ruff check` + `ruff format --check`) and a `test` job (pytest with a 60% coverage floor). Badge links to [github.com/raghuram-chittibomma/data-catalog-assistant](https://github.com/raghuram-chittibomma/data-catalog-assistant).
 
 ---
 
@@ -169,17 +182,19 @@ CI runs the same suite on push (see `.github/workflows/ci.yml`). Badge links to 
 | [docs/GITHUB_PUBLISH.md](docs/GITHUB_PUBLISH.md) | Clean repo checklist |
 | [docs/MAIN_PLAN.md](docs/MAIN_PLAN.md) | Phase status (internal) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Component deep dive |
-| [docs/MCP_DEMO.md](docs/MCP_DEMO.md) | curl / MCP examples |
-| [WORKING_COPY.md](WORKING_COPY.md) | Day-to-day dev commands |
+| [docs/MCP_DEMO.md](docs/MCP_DEMO.md) | REST / MCP usage examples |
+| [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) | Install, run, and MCP client config |
 
 ---
 
-## MCP tools (summary)
+## Tools & resources (REST + MCP)
 
-- **Search:** `search_data_assets`
-- **Query:** `generate_query`, `validate_query`
-- **Impact:** `analyze_data_usage`, `get_lineage`, `assess_change_impact`
-- **Catalog:** resources in `data_catalog.py`
+The same 13 tools and 4 catalog resources are exposed over both the REST API and the MCP server:
+
+- **Query:** `generate_query` (LLM), `validate_query`, `explain_query`, `suggest_optimizations`
+- **Search:** `search_data_assets`, `search_similar_queries`, `search_by_table`, `search_by_owner`
+- **Impact:** `analyze_data_usage`, `get_lineage`, `assess_change_impact`, `compare_data_assets`
+- **Catalog:** `get_asset_details` tool + `catalog://summary|tables|reports|etl` resources
 
 ---
 

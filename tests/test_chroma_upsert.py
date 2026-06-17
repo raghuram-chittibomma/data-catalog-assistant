@@ -31,7 +31,13 @@ def test_add_documents_uses_upsert_by_default():
     store.client = FakeClient()
     store.collection = FakeCollection()
 
-    docs = [{"id": "public.orders", "text": "orders table", "metadata": {"asset_type": "table", "primary_keys": ["id"]}}]
+    docs = [
+        {
+            "id": "public.orders",
+            "text": "orders table",
+            "metadata": {"asset_type": "table", "primary_keys": ["id"]},
+        }
+    ]
     embeddings = [[0.1] * 384]
 
     store.add_documents(docs, embeddings)

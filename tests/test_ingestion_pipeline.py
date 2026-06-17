@@ -1,10 +1,10 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.data_ingestion.ingestion_pipeline import IngestionPipeline
 from src.data_ingestion.data_processor import DataProcessor
+from src.data_ingestion.ingestion_pipeline import IngestionPipeline
 
 
 class DummyConnector:
@@ -27,17 +27,22 @@ class DummyConnector:
                 "table_schema": "public",
                 "table_name": "customers",
                 "columns": [
-                    {"name": "id", "type": "integer", "nullable": False, "default": "nextval('customers_id_seq'::regclass)"},
-                    {"name": "name", "type": "text", "nullable": True, "default": None}
-                ]
+                    {
+                        "name": "id",
+                        "type": "integer",
+                        "nullable": False,
+                        "default": "nextval('customers_id_seq'::regclass)",
+                    },
+                    {"name": "name", "type": "text", "nullable": True, "default": None},
+                ],
             }
         return {
             "table_schema": "public",
             "table_name": "orders",
             "columns": [
                 {"name": "order_id", "type": "integer", "nullable": False, "default": None},
-                {"name": "customer_id", "type": "integer", "nullable": False, "default": None}
-            ]
+                {"name": "customer_id", "type": "integer", "nullable": False, "default": None},
+            ],
         }
 
     def get_table_description(self, table_name):
@@ -72,7 +77,12 @@ class DummyConnector:
                     "table_name": "orders",
                     "columns": [
                         {"name": "order_id", "type": "integer", "nullable": False, "default": None},
-                        {"name": "customer_id", "type": "integer", "nullable": False, "default": None},
+                        {
+                            "name": "customer_id",
+                            "type": "integer",
+                            "nullable": False,
+                            "default": None,
+                        },
                     ],
                     "primary_keys": ["order_id"],
                     "foreign_keys": [

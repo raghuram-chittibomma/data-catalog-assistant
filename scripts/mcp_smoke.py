@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Call MCP HTTP endpoints (server must already be running)."""
 
-import json
 import os
 import sys
 
