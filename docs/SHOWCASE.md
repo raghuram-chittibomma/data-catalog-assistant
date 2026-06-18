@@ -149,7 +149,6 @@ Good interview “what’s next” talking points:
 | [DEMO_SCRIPT.md](DEMO_SCRIPT.md) | 5-minute demo + Gradio/curl steps |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Deeper component notes |
 | [MCP_DEMO.md](MCP_DEMO.md) | REST + MCP tool examples |
-| [GITHUB_PUBLISH.md](GITHUB_PUBLISH.md) | Checklist to publish a clean GitHub repo |
 | [images/README.md](images/README.md) | Screenshot capture guide |
 
 ---

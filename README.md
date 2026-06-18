@@ -4,7 +4,7 @@
 
 [![Tests](https://github.com/raghuram-chittibomma/data-catalog-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/raghuram-chittibomma/data-catalog-assistant/actions/workflows/ci.yml)
 
-> **Portfolio:** [docs/SHOWCASE.md](docs/SHOWCASE.md) · **5-min demo:** [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) · **Publish to GitHub:** [docs/GITHUB_PUBLISH.md](docs/GITHUB_PUBLISH.md)
+> **Portfolio:** [docs/SHOWCASE.md](docs/SHOWCASE.md) · **5-min demo:** [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
 
 ---
 
@@ -178,7 +178,6 @@ CI runs **two jobs** on push (see `.github/workflows/ci.yml`): a `lint` job (`ru
 |----------|-------------|
 | [docs/SHOWCASE.md](docs/SHOWCASE.md) | Resume / interview one-pager |
 | [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | Live demo steps |
-| [docs/GITHUB_PUBLISH.md](docs/GITHUB_PUBLISH.md) | Clean repo checklist |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Component deep dive |
 | [docs/MCP_DEMO.md](docs/MCP_DEMO.md) | REST / MCP usage examples |
 | [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) | Install, run, and MCP client config |
