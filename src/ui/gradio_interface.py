@@ -16,7 +16,7 @@ from src.utils.change_asset_resolver import resolve_change_target_asset
 
 logger = logging.getLogger(__name__)
 
-# Shown in tab labels and per-tab notes so demo audiences know what calls OpenAI.
+# Shown in tab labels and per-tab notes so demo audiences know what calls an LLM.
 _DEMO_TECH_LEGEND_HTML = """
 <style>
 .bdw-demo-legend { font-family: system-ui, sans-serif; font-size: 0.9rem; margin: 0.25rem 0 1rem 0; line-height: 1.6; }
@@ -27,7 +27,7 @@ _DEMO_TECH_LEGEND_HTML = """
 </style>
 <div class="bdw-demo-legend">
   <strong>What uses AI in this demo?</strong><br/>
-  <span class="bdw-chip bdw-chip-llm">LLM</span> OpenAI chat model — <em>Generate SQL</em> only<br/>
+  <span class="bdw-chip bdw-chip-llm">LLM</span> OpenAI or local Ollama — <em>Generate SQL</em> only (choose in that tab)<br/>
   <span class="bdw-chip bdw-chip-emb">Embeddings</span> Vector search (Chroma) — <em>Catalog search</em>; no text generation<br/>
   <span class="bdw-chip bdw-chip-meta">Metadata / rules</span> Postgres catalog &amp; lineage graph —
   <em>Browse, Lineage, Validate SQL, Impact</em>
@@ -43,8 +43,10 @@ _TECH_NOTE_BROWSE = (
 )
 _TECH_NOTE_LINEAGE = "> **No LLM** — Upstream/downstream links come from ingested SQL/ETL metadata."
 _TECH_NOTE_SQL = (
-    "> **Uses LLM (OpenAI)** — Retrieves relevant catalog context (embeddings), then "
-    "the model writes SQL. Requires `OPENAI_API_KEY`."
+    "> **Uses LLM** — Retrieves relevant catalog context (embeddings), then the selected "
+    "model writes SQL. Choose **OpenAI** (`OPENAI_API_KEY`) or **Local** Ollama "
+    "(`OLLAMA_BASE_URL` / `OLLAMA_MODEL`, default `qwen3:8b`). Local can take "
+    "1–3+ minutes; a status line appears while waiting."
 )
 _TECH_NOTE_VALIDATE = (
     "> **No LLM** — Rule-based SQL safety checks (blocked keywords, basic structure)."
@@ -53,6 +55,19 @@ _TECH_NOTE_IMPACT = (
     "> **No LLM** — Usage and change impact use the lineage graph and impact scores "
     "in metadata; proposed change text is parsed for the target table only."
 )
+
+_LLM_PROVIDER_OPENAI = "OpenAI"
+_LLM_PROVIDER_LOCAL = "Local (Ollama)"
+_LLM_PROVIDER_CHOICES = [_LLM_PROVIDER_OPENAI, _LLM_PROVIDER_LOCAL]
+
+
+def _ui_provider_to_api(choice: str | None) -> str | None:
+    """Map Gradio radio labels to RAGEngine provider ids."""
+    if choice == _LLM_PROVIDER_LOCAL:
+        return "ollama"
+    if choice == _LLM_PROVIDER_OPENAI:
+        return "openai"
+    return None
 
 
 def _escape(text: Any) -> str:
@@ -274,7 +289,32 @@ class GradioInterface:
             build_impact_json(data),
         )
 
-    def format_sql_generation(self, natural_language: str) -> str:
+    @staticmethod
+    def sql_wait_status(llm_choice: str | None = None) -> str:
+        """Immediate UI message shown while Generate SQL is in flight."""
+        if llm_choice == _LLM_PROVIDER_LOCAL:
+            return (
+                "⏳ **Waiting for local LLM (Ollama)** — this often takes **1–3+ minutes** "
+                "(longer on first call). Leave this tab open; do not click Generate again. "
+                "The result will replace this message when the model finishes."
+            )
+        return (
+            "⏳ **Waiting for OpenAI** — generating SQL. This usually takes a few seconds."
+        )
+
+    def format_sql_generation(
+        self,
+        natural_language: str,
+        llm_choice: str | None = None,
+        progress=None,
+    ) -> str:
+        def _progress(fraction: float, desc: str) -> None:
+            if progress is not None:
+                try:
+                    progress(fraction, desc=desc)
+                except Exception:
+                    pass
+
         if not self.query_processor and not self.rag_engine:
             return "Query processor not configured."
 
@@ -282,25 +322,56 @@ class GradioInterface:
         if not natural_language:
             return "Describe the data you want in plain English."
 
+        provider = _ui_provider_to_api(llm_choice) or "openai"
+        if provider == "ollama":
+            _progress(0.05, "Preparing local LLM request…")
+        else:
+            _progress(0.05, "Preparing OpenAI request…")
+
+        _progress(0.15, "Retrieving catalog context (embeddings)…")
         if self.query_processor:
-            result = self.query_processor.process(natural_language)
+            _progress(
+                0.35,
+                "Calling LLM — local models can take several minutes…",
+            )
+            result = self.query_processor.process(
+                natural_language, provider=provider
+            )
         else:
             from src.core.query_processor import QueryProcessor
 
+            _progress(
+                0.35,
+                "Calling LLM — local models can take several minutes…",
+            )
             result = QueryProcessor.normalize_llm_result(
-                self.rag_engine.generate_query(natural_language)
+                self.rag_engine.generate_query(
+                    natural_language, provider=provider
+                )
             )
 
+        _progress(0.9, "Parsing and validating SQL…")
         sql = result.get("sql") or result.get("query") or ""
         explanation = result.get("explanation", "")
         confidence = result.get("confidence", 0.0)
         tables = result.get("tables_used") or []
+        used_provider = result.get("provider") or provider
+        used_model = result.get("model") or ""
 
         if not sql:
-            return f"**Could not generate SQL.**\n\n{explanation or 'Check OPENAI_API_KEY and server logs.'}"
+            hint = (
+                "Check OPENAI_API_KEY and server logs."
+                if provider == "openai"
+                else "Check OLLAMA_BASE_URL / OLLAMA_MODEL and that Ollama is reachable."
+            )
+            _progress(1.0, "Finished (no SQL returned)")
+            return f"**Could not generate SQL.**\n\n{explanation or hint}"
 
         tables_line = ", ".join(tables) if tables else "(none)"
+        model_line = used_model or "(config default)"
+        _progress(1.0, "Done")
         return (
+            f"**LLM:** {used_provider} · `{model_line}`\n\n"
             f"**Confidence:** {confidence}\n\n"
             f"**Tables used (RAG):** {tables_line}\n\n"
             f"**SQL:**\n```sql\n{sql}\n```\n\n"
@@ -381,12 +452,47 @@ class GradioInterface:
                     placeholder="top 5 customers by order count",
                     lines=3,
                 )
+                llm_choice = gr.Radio(
+                    choices=_LLM_PROVIDER_CHOICES,
+                    value=_LLM_PROVIDER_OPENAI,
+                    label="LLM provider",
+                    info="Local uses Ollama at OLLAMA_BASE_URL (may be slow on first call).",
+                )
                 sql_btn = gr.Button("Generate SQL", variant="primary")
+                sql_status = gr.Markdown(
+                    value="",
+                    elem_classes=["bdw-sql-wait"],
+                )
                 sql_out = gr.Markdown()
+
+                def _generate_sql_with_progress(
+                    natural_language: str,
+                    choice: str | None,
+                    progress=gr.Progress(track_tqdm=False),
+                ) -> str:
+                    return self.format_sql_generation(
+                        natural_language,
+                        choice,
+                        progress=progress,
+                    )
+
+                # Show wait text immediately, then run the (possibly slow) LLM call.
                 sql_btn.click(
-                    self.format_sql_generation,
-                    inputs=nl_query,
-                    outputs=sql_out,
+                    self.sql_wait_status,
+                    inputs=[llm_choice],
+                    outputs=[sql_status],
+                    queue=False,
+                ).then(
+                    lambda: "*(Generating — see status above. Local LLM can take minutes.)*",
+                    outputs=[sql_out],
+                ).then(
+                    _generate_sql_with_progress,
+                    inputs=[nl_query, llm_choice],
+                    outputs=[sql_out],
+                    show_progress="full",
+                ).then(
+                    lambda: "",
+                    outputs=[sql_status],
                 )
 
             with gr.Tab("Validate SQL · Rules"):
@@ -450,6 +556,8 @@ class GradioInterface:
         """Launch Gradio (blocks until stopped)."""
         logger.info("Launching Gradio interface on %s:%s", host, port)
         demo = self.build_interface()
+        # Queue enables Progress() updates during long local-LLM calls.
+        demo.queue()
         demo.launch(
             server_name=host,
             server_port=port,

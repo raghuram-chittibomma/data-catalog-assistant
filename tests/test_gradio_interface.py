@@ -14,12 +14,14 @@ from src.ui.gradio_interface import GradioInterface
 
 @dataclass
 class _FakeProcessor:
-    def process(self, text: str):
+    def process(self, text: str, provider=None, model=None):
         return {
             "sql": "SELECT 1",
             "confidence": 0.9,
             "explanation": "ok",
             "tables_used": ["public.orders"],
+            "provider": provider or "openai",
+            "model": model or "gpt-4",
         }
 
     def validate_query(self, sql: str) -> bool:
@@ -182,6 +184,32 @@ def test_format_sql_generation():
     assert "```sql" in out
     assert "SELECT 1" in out
     assert "public.orders" in out
+
+
+def test_format_sql_generation_local_provider_label():
+    class _Proc:
+        def process(self, natural_language, provider=None, model=None):
+            return {
+                "sql": "SELECT 1",
+                "confidence": 0.8,
+                "explanation": "ok",
+                "tables_used": ["public.orders"],
+                "provider": provider,
+                "model": "qwen3:8b",
+            }
+
+    ui = GradioInterface(query_processor=_Proc())
+    out = ui.format_sql_generation("count orders", "Local (Ollama)")
+    assert "ollama" in out.lower()
+    assert "qwen3:8b" in out
+
+
+def test_sql_wait_status_local_vs_openai():
+    local = GradioInterface.sql_wait_status("Local (Ollama)")
+    openai = GradioInterface.sql_wait_status("OpenAI")
+    assert "local LLM" in local.lower() or "Ollama" in local
+    assert "minutes" in local.lower()
+    assert "OpenAI" in openai
 
 
 def test_build_interface_returns_blocks():

@@ -43,6 +43,72 @@ def _basic_sql_safety(sql_text: str) -> tuple[bool, str]:
     return True, ""
 
 
+def _normalize_llm_provider(provider: str | None) -> str:
+    """Map UI/config aliases to a canonical provider id."""
+    name = (provider or "openai").strip().lower()
+    if name in ("local", "ollama"):
+        return "ollama"
+    return name
+
+
+def resolve_llm_call_settings(
+    llm_cfg: dict[str, Any],
+    *,
+    provider: str | None = None,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Resolve provider, model, credentials, and timeout for one LLM call.
+
+    Per-request ``provider`` / ``model`` override config defaults. ``ollama``
+    (alias ``local``) uses ``llm.local`` for base_url and a longer timeout.
+    """
+    llm_cfg = llm_cfg or {}
+    chosen = _normalize_llm_provider(provider or llm_cfg.get("provider", "openai"))
+    local_cfg = llm_cfg.get("local") or {}
+    if not isinstance(local_cfg, dict):
+        local_cfg = {}
+
+    temperature = float(llm_cfg.get("temperature", 0.0))
+    max_tokens = int(llm_cfg.get("max_tokens", 512))
+
+    if chosen == "openai":
+        return {
+            "provider": "openai",
+            "model": model or llm_cfg.get("model", "gpt-4"),
+            "api_key": llm_cfg.get("api_key") or os.getenv("OPENAI_API_KEY"),
+            "base_url": None,
+            "timeout_seconds": float(llm_cfg.get("timeout_seconds", 60)),
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+
+    if chosen == "ollama":
+        base_url = (
+            local_cfg.get("base_url")
+            or os.getenv("OLLAMA_BASE_URL")
+            or "http://127.0.0.1:11434/v1"
+        ).rstrip("/")
+        if not base_url.endswith("/v1"):
+            # Ollama root is :11434/; OpenAI-compatible routes live under /v1.
+            base_url = f"{base_url}/v1"
+        return {
+            "provider": "ollama",
+            "model": model
+            or local_cfg.get("model")
+            or os.getenv("OLLAMA_MODEL")
+            or "qwen3:8b",
+            "api_key": local_cfg.get("api_key") or "ollama",
+            "base_url": base_url,
+            "timeout_seconds": float(
+                local_cfg.get("timeout_seconds", llm_cfg.get("timeout_seconds", 300))
+            ),
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+
+    raise ValueError(f"LLM provider '{chosen}' is not supported (use openai or ollama)")
+
+
 @dataclass
 class SearchResult:
     """Result from RAG search."""
@@ -182,12 +248,16 @@ class RAGEngine:
         temperature: float,
         max_tokens: int,
         api_key: str | None,
+        base_url: str | None = None,
+        timeout_seconds: float = 60,
+        provider: str = "openai",
     ) -> str:
         """Call the LLM and return the raw response text.
 
         Uses an injected ``llm_client`` when present (tests/custom clients),
-        otherwise falls back to the OpenAI SDK. Raises on transport errors so the
-        caller can convert them into a structured failure result.
+        otherwise the OpenAI SDK. For Ollama, pass ``base_url`` ending in ``/v1``.
+        Raises on transport errors so the caller can convert them into a
+        structured failure result.
         """
         if self.llm_client:
             resp = self.llm_client.create(
@@ -200,13 +270,24 @@ class RAGEngine:
 
         import openai
 
-        if not api_key:
+        if provider == "openai" and not api_key:
             raise ValueError("OPENAI_API_KEY not set")
+        if provider == "ollama" and not base_url:
+            raise ValueError("Ollama base_url not configured (set OLLAMA_BASE_URL)")
+        if not api_key:
+            api_key = "ollama"
+
         _sanitize_broken_ssl_env_vars()
 
         # Prefer the modern OpenAI client; fall back to legacy ChatCompletion.
         if hasattr(openai, "OpenAI"):
-            client = openai.OpenAI(api_key=api_key)
+            client_kwargs: dict[str, Any] = {
+                "api_key": api_key,
+                "timeout": timeout_seconds,
+            }
+            if base_url:
+                client_kwargs["base_url"] = base_url
+            client = openai.OpenAI(**client_kwargs)
             resp = client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -218,6 +299,11 @@ class RAGEngine:
             except Exception:
                 return str(resp)
 
+        # Legacy SDK path (no base_url support for Ollama).
+        if base_url:
+            raise RuntimeError(
+                "Local/Ollama LLM requires openai>=1.x (OpenAI client with base_url)"
+            )
         resp = openai.ChatCompletion.create(
             model=model,
             messages=messages,
@@ -243,6 +329,8 @@ class RAGEngine:
         self,
         natural_language: str,
         catalog_context: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
     ) -> dict[str, Any]:
         """
         Generate SQL query from natural language description.
@@ -250,39 +338,45 @@ class RAGEngine:
         Args:
             natural_language: User's English description
             catalog_context: Optional RAG-retrieved schema/catalog text (Phase 3)
+            provider: Optional per-request override (``openai`` or ``ollama``/``local``)
+            model: Optional per-request model override
 
         Returns:
             Dictionary with 'query', 'confidence', and 'explanation'
         """
         logger.debug(
-            "Generating query for: %s (context=%s)", natural_language, bool(catalog_context)
+            "Generating query for: %s (context=%s provider=%s model=%s)",
+            natural_language,
+            bool(catalog_context),
+            provider,
+            model,
         )
 
         llm_cfg = self.config.get("llm", {}) if self.config else {}
-        provider = llm_cfg.get("provider", "openai").lower()
-        if provider != "openai":
-            logger.error("LLM provider '%s' not supported by generate_query()", provider)
-            return {
-                "query": "",
-                "confidence": 0.0,
-                "explanation": "LLM provider not configured or supported",
-            }
+        try:
+            settings = resolve_llm_call_settings(llm_cfg, provider=provider, model=model)
+        except ValueError as e:
+            logger.error("%s", e)
+            return {"query": "", "confidence": 0.0, "explanation": str(e)}
 
         messages = self._build_sql_messages(natural_language, catalog_context)
-        model = llm_cfg.get("model", "gpt-4")
-        temperature = llm_cfg.get("temperature", 0.0)
-        max_tokens = llm_cfg.get("max_tokens", 512)
         self._log_llm_messages(
-            messages, model=model, temperature=temperature, max_tokens=max_tokens
+            messages,
+            model=settings["model"],
+            temperature=settings["temperature"],
+            max_tokens=settings["max_tokens"],
         )
 
         try:
             text = self._invoke_llm(
                 messages,
-                model=model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                api_key=llm_cfg.get("api_key") or os.getenv("OPENAI_API_KEY"),
+                model=settings["model"],
+                temperature=settings["temperature"],
+                max_tokens=settings["max_tokens"],
+                api_key=settings["api_key"],
+                base_url=settings["base_url"],
+                timeout_seconds=settings["timeout_seconds"],
+                provider=settings["provider"],
             )
 
             sql_text, explanation = extract_sql_from_llm_text(text)
@@ -298,7 +392,13 @@ class RAGEngine:
                 }
 
             # crude confidence metric: prefer to set high for model-generated SQL
-            return {"query": sql_text, "confidence": 0.8, "explanation": explanation}
+            return {
+                "query": sql_text,
+                "confidence": 0.8,
+                "explanation": explanation,
+                "provider": settings["provider"],
+                "model": settings["model"],
+            }
 
         except ImportError:
             logger.error("OpenAI package not installed or llm client unavailable")

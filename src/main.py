@@ -125,7 +125,19 @@ def register_mcp_services(
         "generate_query",
         query_tools.generate_query,
         "Generate SQL from natural language descriptions.",
-        {"description": {"type": "string", "required": True}},
+        {
+            "description": {"type": "string", "required": True},
+            "provider": {
+                "type": "string",
+                "required": False,
+                "description": "openai or ollama (alias: local). Defaults to config llm.provider.",
+            },
+            "model": {
+                "type": "string",
+                "required": False,
+                "description": "Optional model override (e.g. gpt-4, qwen3:8b).",
+            },
+        },
     )
     mcp_server.register_tool(
         "validate_query",

@@ -19,7 +19,7 @@ A **hybrid data intelligence POC**: semantic catalog search (vectors), determini
 | | |
 |--|--|
 | **Role** | Designed and built end-to-end POC (ingestion → catalog → API → UI) |
-| **Scope** | PostgreSQL Northwind-style DW, file-based SQL/ETL samples, local embeddings, optional OpenAI for SQL gen |
+| **Scope** | PostgreSQL Northwind-style DW, file-based SQL/ETL samples, local embeddings, NL→SQL via OpenAI **or local Ollama** (UI/API provider toggle) |
 | **Outcome** | Demo-ready catalog with search, lineage, impact analysis, and guarded SQL generation |
 
 ---
@@ -47,6 +47,10 @@ flowchart LR
     MCP[MCP server - stdio]
     UI[Gradio UI]
   end
+  subgraph llm [NL to SQL - Generate SQL only]
+    OpenAI[OpenAI GPT-4]
+    Ollama[Local Ollama OpenAI-compatible /v1]
+  end
   DW --> Pipe
   SQL --> Pipe
   ETL --> Pipe
@@ -60,6 +64,9 @@ flowchart LR
   Tools --> UI
   REST --> Curl[curl / HTTP]
   MCP --> Agents[Claude Desktop / Cursor]
+  RAG --> OpenAI
+  RAG --> Ollama
+  UI -.->|OpenAI or Local toggle| RAG
 ```
 
 ---
@@ -72,11 +79,11 @@ flowchart LR
 | Data warehouse | PostgreSQL | Schema + sample Northwind data |
 | Catalog / lineage | PostgreSQL (`bdw_rag_metadata`) | Assets, relationships, impact scores |
 | Vector search | ChromaDB + sentence-transformers (`all-MiniLM-L6-v2`) | Semantic catalog search |
-| LLM | OpenAI API (GPT-4) | NL→SQL with retrieved catalog context |
+| LLM | OpenAI API (GPT-4) and/or local Ollama (`qwen3:8b` etc.) | NL→SQL with retrieved catalog context |
 | REST API | FastAPI + Uvicorn | HTTP tools on port 3000 |
 | MCP | Official `mcp` Python SDK | Protocol-compliant tools/resources over stdio |
 | UI | Gradio 4.x | Demo tabs with LLM/embeddings legend |
-| Batch | `run_refresh_job.py`, preflight script | Full catalog refresh |
+| Batch | `run_refresh_job.py` | Full catalog refresh |
 | Quality | pytest (~105 tests), ruff, coverage gate | Unit + integration tests, CI lint + 60% coverage floor |
 
 ---
@@ -85,10 +92,11 @@ flowchart LR
 
 1. **Two stores, two jobs** — Chroma for fuzzy discovery; Postgres for authoritative lineage and impact (not “vectors only”).
 2. **LLM scoped to generation** — Search, lineage, validate, and impact use embeddings or metadata/rules so demos stay explainable and cheaper.
-3. **RAG before SQL** — `QueryProcessor` pulls top-k catalog snippets into the LLM prompt; response includes `tables_used`.
-4. **One tool layer, three interfaces** — Shared query/search/impact handlers back the Gradio UI, the REST API, and the MCP server, so behavior never drifts between them.
-5. **Change impact resolver** — Proposed change text can name a different table than the Asset id field; analysis follows the change target.
-6. **SQL safety** — Rule-based validator on generated SQL; blocked patterns for demo hardening.
+3. **Cloud or local LLM for SQL** — Same OpenAI SDK path for GPT-4 and Ollama (`/v1`); Gradio and REST/MCP can pick `provider` per request without a second client.
+4. **RAG before SQL** — `QueryProcessor` pulls top-k catalog snippets into the LLM prompt; response includes `tables_used`.
+5. **One tool layer, three interfaces** — Shared query/search/impact handlers back the Gradio UI, the REST API, and the MCP server, so behavior never drifts between them.
+6. **Change impact resolver** — Proposed change text can name a different table than the Asset id field; analysis follows the change target.
+7. **SQL safety** — Rule-based validator on generated SQL; blocked patterns for demo hardening.
 
 ---
 
@@ -115,7 +123,7 @@ Numbers vary with config and samples; run `python batch_jobs/run_refresh_job.py`
 | Catalog search | Embeddings only (Chroma) |
 | Catalog browse, Lineage, Impact | Metadata graph — no LLM |
 | Validate SQL | Rules — no LLM |
-| Generate SQL | **LLM** + RAG context |
+| Generate SQL | **LLM** + RAG context (OpenAI or local Ollama; UI toggle) |
 
 ---
 
@@ -157,7 +165,7 @@ Good interview “what’s next” talking points:
 
 Include the repo link: `https://github.com/raghuram-chittibomma/data-catalog-assistant`
 
-- Designed and implemented a **RAG-based data catalog assistant** combining Chroma semantic search, PostgreSQL lineage metadata, and OpenAI NL→SQL, exposing a shared tool layer through a Gradio UI, a FastAPI REST API, and a protocol-compliant **MCP server** (official `mcp` SDK).
+- Designed and implemented a **RAG-based data catalog assistant** combining Chroma semantic search, PostgreSQL lineage metadata, and NL→SQL via **OpenAI or local Ollama** (UI/API provider toggle over one OpenAI-compatible client), exposing a shared tool layer through a Gradio UI, a FastAPI REST API, and a protocol-compliant **MCP server** (official `mcp` SDK).
 - Built an **ingestion pipeline** for warehouse schema, SQL files, and ETL YAML with automated refresh and impact scoring, backed by **105+ pytest tests** plus a CI lint and coverage gate.
 
 ---

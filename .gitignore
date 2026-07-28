@@ -105,6 +105,9 @@ build/
 *.yaml.bak
 *.yaml.backup
 
+# Private, local-only notes (interview prep, etc.) — never publish
+_private/
+
 # Local-only dev/diagnostic scripts (not published)
 scripts/
 
@@ -113,3 +116,7 @@ docs/MAIN_PLAN.md
 
 # Internal publishing checklist (not published)
 docs/GITHUB_PUBLISH.md
+
+# Local Ollama / debug scratch files
+tmp_ollama_*.json
+tmp_*.json

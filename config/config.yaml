@@ -35,14 +35,23 @@ embeddings:
   provider: local
   model_name: all-MiniLM-L6-v2
 
-# LLM Configuration
+# LLM Configuration (Generate SQL / generate_query only)
+# Default provider is used when UI/API do not override per request.
+# Local Ollama is OpenAI-compatible: base_url must include /v1.
 llm:
-  provider: openai  # or anthropic, azure, etc
+  provider: openai  # openai | ollama (alias: local)
   model: gpt-4
   api_key: ${OPENAI_API_KEY}
   temperature: 0.7
   max_tokens: 2000
+  timeout_seconds: 60
   log_prompts: true  # INFO log of system + user messages sent to the LLM
+  local:
+    enabled: true
+    base_url: ${OLLAMA_BASE_URL}  # e.g. http://192.168.4.52:11434/v1
+    api_key: ollama  # Ollama ignores this; any non-empty string works
+    model: ${OLLAMA_MODEL}  # e.g. qwen3:8b
+    timeout_seconds: 300
 
 # Natural-language SQL (Phase 3 — RAG context from vector search)
 query:

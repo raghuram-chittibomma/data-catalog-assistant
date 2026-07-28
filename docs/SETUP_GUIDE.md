@@ -6,9 +6,9 @@
 - Git
 - Virtual environment manager (venv or conda)
 - API Keys:
-  - OpenAI (optional, for LLM / SQL generation only)
+  - OpenAI (optional, for cloud LLM / SQL generation)
+  - Optional local Ollama host (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`) for offline/local SQL generation
   - sentence-transformers (local embeddings, via requirements.txt)
-  - Optional: Anthropic or other LLM services
   - ChromaDB via `pip install -r requirements.txt` (no separate server required)
 
 ## Installation Steps
@@ -129,23 +129,45 @@ Data is stored locally under `persist_directory`. No separate Chroma server is r
 
 ### LLM Configuration
 
-#### OpenAI
+Generate SQL supports **OpenAI** and **local Ollama** (OpenAI-compatible `/v1`). The Gradio UI can switch per request; REST/MCP accept optional `provider` / `model` (omit to use config defaults).
+
+#### OpenAI (default)
 ```yaml
 llm:
   provider: openai
   model: gpt-4
   api_key: ${OPENAI_API_KEY}
   temperature: 0.7
+  timeout_seconds: 60
 ```
 
-#### Anthropic
+#### Local Ollama
 ```yaml
 llm:
-  provider: anthropic
-  model: claude-3-sonnet
-  api_key: ${ANTHROPIC_API_KEY}
+  provider: openai   # default for APIs when UI does not override
+  local:
+    enabled: true
+    base_url: ${OLLAMA_BASE_URL}  # e.g. http://192.168.4.52:11434/v1
+    api_key: ollama
+    model: ${OLLAMA_MODEL}        # e.g. qwen3:8b
+    timeout_seconds: 300
 ```
 
+In `.env`:
+```bash
+OPENAI_API_KEY=sk-...
+OLLAMA_BASE_URL=http://192.168.4.52:11434/v1
+OLLAMA_MODEL=qwen3:8b
+```
+
+Confirm models on the Ollama host: `curl http://HOST:11434/api/tags`
+
+REST example (local override):
+```bash
+curl -X POST http://localhost:3000/tools/generate_query \
+  -H "Content-Type: application/json" \
+  -d "{\"description\":\"top 5 customers by order count\",\"provider\":\"ollama\"}"
+```
 ## First Run Checklist
 
 - [ ] Virtual environment created and activated

@@ -14,7 +14,7 @@ Teams lose time finding tables and SQL, tracing lineage manually, and estimating
 
 ## Solution
 
-Ingest warehouse schema plus SQL/ETL samples into **Chroma** (search) and **Postgres metadata** (lineage/impact). Expose the same capabilities through three interfaces that share one set of tool handlers: a **Gradio UI** (http://127.0.0.1:7860), a **REST API** (FastAPI, http://localhost:3000), and a protocol-compliant **MCP server** (stdio, via the official `mcp` SDK) for agents like Claude Desktop / Cursor. Use **OpenAI only for Generate SQL**, with RAG context from the catalog.
+Ingest warehouse schema plus SQL/ETL samples into **Chroma** (search) and **Postgres metadata** (lineage/impact). Expose the same capabilities through three interfaces that share one set of tool handlers: a **Gradio UI** (http://127.0.0.1:7860), a **REST API** (FastAPI, http://localhost:3000), and a protocol-compliant **MCP server** (stdio, via the official `mcp` SDK) for agents like Claude Desktop / Cursor. Use an **LLM only for Generate SQL** (OpenAI or local Ollama), with RAG context from the catalog.
 
 ## Screenshots
 
@@ -48,6 +48,10 @@ flowchart TB
     MCP[MCP server - stdio]
     UI[Gradio UI]
   end
+  subgraph llm [NL to SQL LLMs - Generate SQL only]
+    OpenAI[OpenAI GPT-4]
+    Ollama[Local Ollama /v1]
+  end
   DW --> Job
   Files --> Job
   Job --> Chroma
@@ -58,6 +62,9 @@ flowchart TB
   Handlers --> REST
   Handlers --> MCP
   Handlers --> UI
+  RAG --> OpenAI
+  RAG --> Ollama
+  UI -.->|provider toggle| RAG
 ```
 
 | Component | Path |
@@ -79,7 +86,7 @@ flowchart TB
 | Warehouse | PostgreSQL (Northwind-style sample) |
 | Catalog / lineage | PostgreSQL database `bdw_rag_metadata` |
 | Vectors | ChromaDB, `sentence-transformers` (`all-MiniLM-L6-v2`) |
-| LLM | OpenAI (GPT-4) — NL→SQL only |
+| LLM | OpenAI (GPT-4) and/or local Ollama (OpenAI-compatible `/v1`) — NL→SQL only |
 | REST API | FastAPI, Uvicorn |
 | MCP | Official `mcp` Python SDK (stdio) |
 | UI | Gradio 4.x |
@@ -90,7 +97,7 @@ flowchart TB
 ## Design decisions
 
 - **Embeddings for search, graph for lineage** — Similarity in Chroma; upstream/downstream and impact scores in Postgres.
-- **LLM only where needed** — Generate SQL uses RAG + OpenAI; impact and lineage stay deterministic for demos.
+- **LLM only where needed** — Generate SQL uses RAG + OpenAI or local Ollama; impact and lineage stay deterministic for demos.
 - **One tool layer, three interfaces** — the same query/search/impact handlers back the Gradio UI, the REST API, and the MCP server, so behavior never drifts between them.
 - **Change text drives target table** — Assess change impact parses `on public.customers` even if Asset id still says `public.orders`.
 - **SQL validation** — Rule-based checks on generated SQL before display.
@@ -105,7 +112,8 @@ Details: [docs/SHOWCASE.md](docs/SHOWCASE.md)
 
 - Python 3.10+
 - PostgreSQL (data warehouse + metadata DB)
-- [OpenAI API key](https://platform.openai.com/) (only for **Generate SQL** tab)
+- [OpenAI API key](https://platform.openai.com/) (optional — **Generate SQL** with OpenAI)
+- Optional: [Ollama](https://ollama.com/) host for **Local** SQL generation (OpenAI-compatible `/v1` API)
 - Conda env with dependencies installed (`pip install -r requirements.txt`)
 
 ### Setup
@@ -115,7 +123,8 @@ conda activate ai-dev
 cd path\to\data-catalog-assistant
 
 copy .env.example .env
-# Edit .env: DW_HOST, DW_USER, DW_PASSWORD, METADATA_DB_HOST, METADATA_DB_*, OPENAI_API_KEY
+# Edit .env: DW_*, METADATA_DB_*, OPENAI_API_KEY
+# Optional local LLM: OLLAMA_BASE_URL=http://host:11434/v1  OLLAMA_MODEL=qwen3:8b
 ```
 
 ### Refresh catalog (required once)
@@ -155,7 +164,7 @@ See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for an example MCP client config.
 | Catalog search · Embeddings | Chroma — no chat LLM |
 | Catalog browse / Lineage / Impact · Metadata | Postgres lineage — no LLM |
 | Validate SQL · Rules | Pattern checks — no LLM |
-| Generate SQL · LLM | OpenAI + RAG catalog context |
+| Generate SQL · LLM | OpenAI or local Ollama + RAG catalog context (UI provider toggle) |
 
 ---
 

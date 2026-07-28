@@ -106,9 +106,17 @@ def build_mcp(backends: dict[str, Any] | None = None) -> FastMCP:
     # Query tools (LLM is used only by generate_query)
     # ------------------------------------------------------------------ #
     @mcp.tool()
-    def generate_query(description: str) -> dict[str, Any]:
-        """Generate a PostgreSQL SELECT from a natural-language description (LLM-backed)."""
-        return query_tools.generate_query(description)
+    def generate_query(
+        description: str,
+        provider: str | None = None,
+        model: str | None = None,
+    ) -> dict[str, Any]:
+        """Generate a PostgreSQL SELECT from a natural-language description (LLM-backed).
+
+        Optional ``provider`` is ``openai`` or ``ollama`` (alias ``local``).
+        Optional ``model`` overrides the configured model for that provider.
+        """
+        return query_tools.generate_query(description, provider=provider, model=model)
 
     @mcp.tool()
     def validate_query(sql: str) -> dict[str, Any]:

@@ -15,8 +15,13 @@ from src.mcp_server.mcp_app import build_mcp  # noqa: E402
 
 
 class _StubQueryTools:
-    def generate_query(self, description):
-        return {"sql": "SELECT 1", "called_with": description}
+    def generate_query(self, description, provider=None, model=None):
+        return {
+            "sql": "SELECT 1",
+            "called_with": description,
+            "provider": provider,
+            "model": model,
+        }
 
     def validate_query(self, sql):
         return {"valid": True}
@@ -123,6 +128,8 @@ def test_all_resources_registered(mcp_server):
 def test_tools_expose_input_schema(mcp_server):
     tools = asyncio.run(mcp_server.list_tools())
     by_name = {t.name: t for t in tools}
-    # generate_query should advertise a `description` string parameter.
+    # generate_query should advertise description plus optional provider/model.
     props = by_name["generate_query"].inputSchema.get("properties", {})
     assert "description" in props
+    assert "provider" in props
+    assert "model" in props

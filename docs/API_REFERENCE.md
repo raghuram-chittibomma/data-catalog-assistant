@@ -69,14 +69,18 @@ Generate SQL query from natural language description.
 
 ```
 Parameters:
-  - description (string): What data do you want to retrieve?
+  - description (string, required): What data do you want to retrieve?
+  - provider (string, optional): openai | ollama (alias: local). Defaults to config llm.provider.
+  - model (string, optional): Model override (e.g. gpt-4, qwen3:8b).
 
 Returns:
   {
     "sql": "SELECT * FROM customer_fact WHERE created_date > '2024-01-01'",
     "confidence": 0.92,
     "explanation": "This query retrieves all customers created after January 1, 2024",
-    "tables_used": ["customer_fact"]
+    "tables_used": ["customer_fact"],
+    "provider": "openai",
+    "model": "gpt-4"
   }
 ```
 
@@ -220,10 +224,15 @@ embeddings:
   model_name: all-MiniLM-L6-v2
   model: model_name
 
-# LLM
+# LLM (Generate SQL only)
 llm:
-  provider: openai|anthropic
-  model: model_name
+  provider: openai|ollama
+  model: gpt-4
+  timeout_seconds: 60
+  local:
+    base_url: http://host:11434/v1
+    model: qwen3:8b
+    timeout_seconds: 300
 
 # Metadata store
 metadata_store:

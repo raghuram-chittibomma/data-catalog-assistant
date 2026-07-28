@@ -58,9 +58,9 @@ curl.exe -X POST "http://localhost:3000/tools/get_lineage" `
 curl.exe -X POST "http://localhost:3000/resources/data_catalog_summary"
 ```
 
-**SQL generation** (requires `OPENAI_API_KEY` in `.env`)
+**SQL generation** (OpenAI via `OPENAI_API_KEY`, or local Ollama via `OLLAMA_BASE_URL` / `OLLAMA_MODEL`)
 
-Phase 3: `generate_query` **searches the catalog first**, then sends top matching table/SQL snippets to the LLM. Response includes **`tables_used`** (asset ids from search).
+Phase 3: `generate_query` **searches the catalog first**, then sends top matching table/SQL snippets to the LLM. Response includes **`tables_used`** (asset ids from search). Optional body fields: **`provider`** (`openai` | `ollama` / `local`) and **`model`**.
 
 Requires compatible packages: `openai>=1.55` (see `requirements.txt`). If you see `unexpected keyword argument 'proxies'`, run:
 
@@ -76,21 +76,30 @@ curl.exe -X POST "http://localhost:3000/tools/generate_query" `
   -d "{\"description\": \"top 5 customers by order count\"}"
 ```
 
+Local Ollama override:
+
+```powershell
+curl.exe -X POST "http://localhost:3000/tools/generate_query" `
+  -H "Content-Type: application/json" `
+  -d "{\"description\": \"top 5 customers by order count\", \"provider\": \"ollama\"}"
+```
+
 Or:
 
 ```powershell
 Invoke-RestMethod -Method POST -Uri "http://localhost:3000/tools/generate_query" `
   -ContentType "application/json" `
-  -Body '{"description": "top 5 customers by order count"}'
+  -Body '{"description": "top 5 customers by order count", "provider": "ollama"}'
 ```
 
-Response uses **`sql`** (not `query`), plus **`tables_used`** when RAG hits tables.
+Response uses **`sql`** (not `query`), plus **`tables_used`** when RAG hits tables, and **`provider`** / **`model`** when generation succeeds.
 
 **If `sql` is empty**, check the `explanation` field:
 
 | explanation | Fix |
 |---------------|-----|
 | `OPENAI_API_KEY not set` | Set key in `.env`, restart `main.py` |
+| connection / timeout to Ollama | Check `OLLAMA_BASE_URL` (must include `/v1`), `curl HOST:11434/api/tags`, raise `llm.local.timeout_seconds` |
 | `unexpected keyword argument 'proxies'` | `pip install "openai>=1.55.0"` and restart `main.py` |
 | `[Errno 2] No such file or directory` | Invalid `SSL_CERT_FILE` in environment — restart after code fix, or run `$env:SSL_CERT_FILE = $null` before `main.py` |
 | `Safety check failed` | Model returned disallowed SQL |

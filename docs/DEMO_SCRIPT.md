@@ -15,15 +15,15 @@ Open **http://127.0.0.1:7860** — UI title: **Data Catalog Assistant**. The top
 
 ## 5-minute interview demo
 
-Use this order for recruiters or hiring managers (~5 min). Mention the legend: *only Generate SQL calls OpenAI*.
+Use this order for recruiters or hiring managers (~5 min). Mention the legend: *only Generate SQL calls an LLM (OpenAI or local Ollama)*.
 
 | Step | Time | Tab | What to say + do |
 |------|------|-----|------------------|
-| 1 | 0:30 | *(top legend)* | “Search uses vectors; lineage and impact use our metadata graph; SQL generation is the only LLM call.” |
+| 1 | 0:30 | *(top legend)* | “Search uses vectors; lineage and impact use our metadata graph; SQL generation is the only LLM call — pick OpenAI or Local in that tab.” |
 | 2 | 1:00 | **Catalog search · Embeddings** | Query: `product revenue by category` → show SQL + table hits. |
 | 3 | 1:00 | **Lineage · Metadata** | Asset: `public.orders`, direction **both** → ASCII upstream/downstream. |
 | 4 | 1:30 | **Impact · Metadata** | See [Change impact scenario](#change-impact-scenario) below — shows smart table resolution. |
-| 5 | 1:00 | **Generate SQL · LLM** | `top 5 customers by order count` → SQL + **Tables used (RAG)**. Optional: terminal `LLM prompt outgoing` if `llm.log_prompts: true`. |
+| 5 | 1:00+ | **Generate SQL · LLM** | Choose **Local (Ollama)** or **OpenAI**, then `top 5 customers by order count`. A **waiting** status appears immediately (local often 1–3+ min). Then SQL + **Tables used (RAG)** + provider/model. Optional: terminal `LLM prompt outgoing` if `llm.log_prompts: true`. |
 | 6 | 0:30 | *(optional)* | **Validate SQL · Rules** — paste `DROP TABLE x` → blocked. Or curl one MCP call (below). |
 
 **Closer:** “Same tools are on FastAPI port 3000 for agents; refresh job rebuilds Chroma and metadata from the warehouse and sample files.”
@@ -100,7 +100,7 @@ curl.exe -X POST "http://localhost:3000/tools/analyze_data_usage" `
 
 ## Gradio — Generate SQL · LLM
 
-Requires `OPENAI_API_KEY` in `.env`.
+Use the **LLM provider** radio: **OpenAI** (`OPENAI_API_KEY`) or **Local (Ollama)** (`OLLAMA_BASE_URL` + `OLLAMA_MODEL`, e.g. `qwen3:8b`). Local can be slow on first call.
 
 | Natural language | Should use tables (RAG) |
 |----------------|-------------------------|
@@ -108,7 +108,7 @@ Requires `OPENAI_API_KEY` in `.env`.
 | revenue by product category | categories, products, order_details |
 | orders shipped by each shipper in 1998 | orders, shippers |
 
-Check terminal for `LLM prompt outgoing` when `llm.log_prompts: true` in `config/config.yaml`.
+Check terminal for `LLM prompt outgoing` when `llm.log_prompts: true` in `config/config.yaml`. Output includes **LLM:** provider · model.
 
 ---
 
@@ -118,6 +118,14 @@ Check terminal for `LLM prompt outgoing` when `llm.log_prompts: true` in `config
 curl.exe -X POST "http://localhost:3000/tools/search_data_assets" `
   -H "Content-Type: application/json" `
   -d "{\"query\": \"employee sales ETL\", \"top_k\": 8}"
+```
+
+Local LLM override:
+
+```powershell
+curl.exe -X POST "http://localhost:3000/tools/generate_query" `
+  -H "Content-Type: application/json" `
+  -d "{\"description\": \"top 5 customers by order count\", \"provider\": \"ollama\"}"
 ```
 
 More examples: [MCP_DEMO.md](MCP_DEMO.md).

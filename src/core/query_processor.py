@@ -33,12 +33,17 @@ class QueryProcessor:
     def normalize_llm_result(result: dict[str, Any]) -> dict[str, Any]:
         """Map RAGEngine.generate_query keys to MCP tool response shape."""
         sql = result.get("sql") or result.get("query") or ""
-        return {
+        out = {
             "sql": sql,
             "confidence": result.get("confidence", 0.0),
             "explanation": result.get("explanation", ""),
             "tables_used": result.get("tables_used", []),
         }
+        if result.get("provider"):
+            out["provider"] = result["provider"]
+        if result.get("model"):
+            out["model"] = result["model"]
+        return out
 
     def build_catalog_context(self, natural_language: str) -> tuple[str, list[str]]:
         """
@@ -87,12 +92,19 @@ class QueryProcessor:
         )
         return context, unique_tables
 
-    def process(self, natural_language: str) -> dict[str, Any]:
+    def process(
+        self,
+        natural_language: str,
+        provider: str | None = None,
+        model: str | None = None,
+    ) -> dict[str, Any]:
         """
         Convert natural language to SQL query with RAG-augmented prompt.
 
         Args:
             natural_language: User's English description
+            provider: Optional per-request LLM provider (``openai`` or ``ollama``)
+            model: Optional per-request model name
 
         Returns:
             Dict with 'sql', 'confidence', 'explanation', 'tables_used'
@@ -105,6 +117,8 @@ class QueryProcessor:
         raw = self.rag_engine.generate_query(
             natural_language,
             catalog_context=catalog_context or None,
+            provider=provider,
+            model=model,
         )
         out = self.normalize_llm_result(raw)
         if tables_used:

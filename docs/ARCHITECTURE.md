@@ -100,17 +100,18 @@ SQL Files → SQL Parser → Descriptions
 ### Query Processing Flow
 
 ```
-User Query
+User Query (+ optional provider: openai | ollama)
     ↓
 Query Processor
     ↓
 Vector Search for relevant tables/columns
     ↓
 LLM generates SQL with context
+  (OpenAI GPT-4 or local Ollama via OpenAI-compatible /v1)
     ↓
 SQL Validation
     ↓
-User receives SQL + explanation
+User receives SQL + explanation (+ provider/model used)
 ```
 
 ### Impact Analysis Flow
@@ -152,7 +153,7 @@ Refresh Complete
 ### Core Libraries
 - **Vector database**: ChromaDB
 - **Embeddings**: Sentence Transformers (local)
-- **LLMs**: OpenAI, Anthropic
+- **LLMs**: OpenAI (GPT-4) and/or local Ollama (OpenAI-compatible `/v1`, e.g. `qwen3:8b`)
 - **Web UI**: Gradio
 - **MCP**: Python MCP SDK
 - **Metadata**: PostgreSQL, MongoDB
@@ -171,6 +172,7 @@ Single Machine
 ├── ChromaDB (persist_directory: chroma_data/)
 ├── Local embeddings (sentence-transformers)
 ├── FastAPI + Gradio on localhost
+├── OpenAI API and/or local Ollama (OpenAI-compatible /v1) for Generate SQL
 └── JSON or PostgreSQL metadata
 ```
 
@@ -180,6 +182,7 @@ Cloud Deployment
 ├── ChromaDB (persistent volume for chroma_data/)
 ├── Local embeddings (sentence-transformers)
 ├── PostgreSQL (DW + optional metadata)
+├── LLM: OpenAI and/or private Ollama endpoint
 ├── Multiple worker processes
 ├── Load balancer
 └── Monitoring & logging

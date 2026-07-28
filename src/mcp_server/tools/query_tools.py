@@ -28,24 +28,39 @@ class QueryTools:
         self.rag_engine = rag_engine
         logger.info("Initialized Query Tools")
 
-    def generate_query(self, description: str) -> dict[str, Any]:
+    def generate_query(
+        self,
+        description: str,
+        provider: str | None = None,
+        model: str | None = None,
+    ) -> dict[str, Any]:
         """
         Generate SQL query from natural language description.
 
         MCP Tool: generate_query
         Parameters:
             - description (string): What data do you want to get?
+            - provider (string, optional): ``openai`` or ``ollama`` (alias ``local``)
+            - model (string, optional): Model name override
 
         Returns:
             Generated SQL, confidence score, and explanation
         """
-        logger.debug(f"Generating query: {description}")
+        logger.debug(
+            "Generating query: %s (provider=%s model=%s)", description, provider, model
+        )
         if self.query_processor:
-            generated = self.query_processor.process(description)
+            generated = self.query_processor.process(
+                description, provider=provider, model=model
+            )
             if generated:
                 return generated
         if self.rag_engine:
-            return QueryProcessor.normalize_llm_result(self.rag_engine.generate_query(description))
+            return QueryProcessor.normalize_llm_result(
+                self.rag_engine.generate_query(
+                    description, provider=provider, model=model
+                )
+            )
 
         return {
             "sql": "",

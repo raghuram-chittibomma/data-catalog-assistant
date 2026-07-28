@@ -31,9 +31,17 @@ class RecordingRAGEngine:
     def search_data_lineage(self, query: str, top_k: int = 5):
         return self._hits[:top_k]
 
-    def generate_query(self, natural_language: str, catalog_context: str | None = None):
+    def generate_query(
+        self,
+        natural_language: str,
+        catalog_context: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+    ):
         self.last_nl = natural_language
         self.last_catalog_context = catalog_context
+        self.last_provider = provider
+        self.last_model = model
         return self._llm_response
 
 

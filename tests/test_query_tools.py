@@ -13,8 +13,14 @@ class _FakeRAG:
     def search_data_lineage(self, query: str, top_k: int = 5):
         return []
 
-    def generate_query(self, description: str, catalog_context=None):
-        return {"query": "SELECT 1", "confidence": 0.9, "explanation": "ok"}
+    def generate_query(self, description: str, catalog_context=None, provider=None, model=None):
+        return {
+            "query": "SELECT 1",
+            "confidence": 0.9,
+            "explanation": "ok",
+            "provider": provider or "openai",
+            "model": model or "gpt-4",
+        }
 
 
 def test_normalize_llm_result_maps_query_key():
@@ -49,7 +55,7 @@ def test_query_tools_returns_processor_result_when_sql_empty():
         def search_data_lineage(self, query, top_k=5):
             return []
 
-        def generate_query(self, description, catalog_context=None):
+        def generate_query(self, description, catalog_context=None, provider=None, model=None):
             return {"query": "", "confidence": 0.0, "explanation": "LLM failed"}
 
     from src.core.query_processor import QueryProcessor
