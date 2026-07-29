@@ -298,9 +298,7 @@ class GradioInterface:
                 "(longer on first call). Leave this tab open; do not click Generate again. "
                 "The result will replace this message when the model finishes."
             )
-        return (
-            "⏳ **Waiting for OpenAI** — generating SQL. This usually takes a few seconds."
-        )
+        return "⏳ **Waiting for OpenAI** — generating SQL. This usually takes a few seconds."
 
     def format_sql_generation(
         self,
@@ -334,9 +332,7 @@ class GradioInterface:
                 0.35,
                 "Calling LLM — local models can take several minutes…",
             )
-            result = self.query_processor.process(
-                natural_language, provider=provider
-            )
+            result = self.query_processor.process(natural_language, provider=provider)
         else:
             from src.core.query_processor import QueryProcessor
 
@@ -345,9 +341,7 @@ class GradioInterface:
                 "Calling LLM — local models can take several minutes…",
             )
             result = QueryProcessor.normalize_llm_result(
-                self.rag_engine.generate_query(
-                    natural_language, provider=provider
-                )
+                self.rag_engine.generate_query(natural_language, provider=provider)
             )
 
         _progress(0.9, "Parsing and validating SQL…")

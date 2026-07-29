@@ -46,20 +46,14 @@ class QueryTools:
         Returns:
             Generated SQL, confidence score, and explanation
         """
-        logger.debug(
-            "Generating query: %s (provider=%s model=%s)", description, provider, model
-        )
+        logger.debug("Generating query: %s (provider=%s model=%s)", description, provider, model)
         if self.query_processor:
-            generated = self.query_processor.process(
-                description, provider=provider, model=model
-            )
+            generated = self.query_processor.process(description, provider=provider, model=model)
             if generated:
                 return generated
         if self.rag_engine:
             return QueryProcessor.normalize_llm_result(
-                self.rag_engine.generate_query(
-                    description, provider=provider, model=model
-                )
+                self.rag_engine.generate_query(description, provider=provider, model=model)
             )
 
         return {

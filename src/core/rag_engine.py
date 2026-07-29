@@ -84,19 +84,14 @@ def resolve_llm_call_settings(
 
     if chosen == "ollama":
         base_url = (
-            local_cfg.get("base_url")
-            or os.getenv("OLLAMA_BASE_URL")
-            or "http://127.0.0.1:11434/v1"
+            local_cfg.get("base_url") or os.getenv("OLLAMA_BASE_URL") or "http://127.0.0.1:11434/v1"
         ).rstrip("/")
         if not base_url.endswith("/v1"):
             # Ollama root is :11434/; OpenAI-compatible routes live under /v1.
             base_url = f"{base_url}/v1"
         return {
             "provider": "ollama",
-            "model": model
-            or local_cfg.get("model")
-            or os.getenv("OLLAMA_MODEL")
-            or "qwen3:8b",
+            "model": model or local_cfg.get("model") or os.getenv("OLLAMA_MODEL") or "qwen3:8b",
             "api_key": local_cfg.get("api_key") or "ollama",
             "base_url": base_url,
             "timeout_seconds": float(
